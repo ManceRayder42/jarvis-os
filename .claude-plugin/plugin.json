@@ -1,0 +1,34 @@
+{
+  "name": "jarvis-memory",
+  "version": "0.1.0",
+  "description": "A persistent memory hub for Claude Code that loads into every session from any directory, plus a curated set of research and workflow skills.",
+  "author": {
+    "name": "Or Gelbgisser",
+    "url": "https://github.com/ManceRayder42"
+  },
+  "homepage": "https://github.com/ManceRayder42/jarvis-plugin",
+  "repository": "https://github.com/ManceRayder42/jarvis-plugin",
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "context",
+    "personal-assistant",
+    "productivity",
+    "hooks"
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Loading Jarvis memory..."
+          }
+        ]
+      }
+    ]
+  }
+}

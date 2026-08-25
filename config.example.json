@@ -1,0 +1,6 @@
+{
+  "hub": "/Users/someone/jarvis-hub",
+  "obsidian_vault": null,
+  "features": { "core": true, "research": true, "media": false, "telegram": false },
+  "remote": "remote-control"
+}

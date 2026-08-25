@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "jarvis-plugin",
+  "description": "A persistent memory hub for Claude Code, plus a curated set of research and workflow skills.",
+  "owner": {
+    "name": "Or Gelbgisser",
+    "url": "https://github.com/ManceRayder42"
+  },
+  "plugins": [
+    {
+      "name": "jarvis-memory",
+      "description": "A persistent memory hub that loads into every session from any directory, plus a curated set of research and workflow skills.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

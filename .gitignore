@@ -1,0 +1,7 @@
+# Internal working docs — they reference the author's own machine and vault,
+# and are not part of what this plugin distributes.
+SPEC.md
+LICENSE-AUDIT.md
+
+node_modules/
+.DS_Store
