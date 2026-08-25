@@ -51,7 +51,7 @@ function resolveHub() {
 }
 
 function nudge() {
-  process.stdout.write('[jarvis-memory] Not set up yet — run /jarvis-setup to point this plugin at a memory hub.');
+  process.stdout.write('[jarvis-memory] Not set up yet — run /jarvis-setup to point this plugin at a memory hub.\n');
 }
 
 function emitMemory(hub) {
