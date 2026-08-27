@@ -14,7 +14,7 @@ Launch the Jarvis setup server and hand the user its URL.
    node "${CLAUDE_PLUGIN_ROOT}/setup/server.mjs"
    ```
 2. The server binds `127.0.0.1` on an OS-assigned port, mints a one-time
-   token, and prints a single `http://127.0.0.1:<port>/?token=<token>` URL to
+   token, and prints a single `http://127.0.0.1:<port>/?t=<token>` URL to
    stdout before it starts listening. Read that URL from the command output.
 3. Tell the user to open the URL in their browser. Do not try to open it for
    them or fetch it yourself — it's a page they interact with directly (hub
