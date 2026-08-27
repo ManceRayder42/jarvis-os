@@ -37,21 +37,19 @@ session start no matter where you are.
 
 ## Install
 
-From a local clone (this repo, before it has a real remote):
-
 ```bash
-claude plugin marketplace add /path/to/jarvis-plugin
-claude plugin install jarvis-os@jarvis-plugin
-```
-
-Once this repo has a GitHub remote, the same flow works from there:
-
-```bash
-claude plugin marketplace add <owner>/jarvis-plugin
-claude plugin install jarvis-os@jarvis-plugin
+claude plugin marketplace add ManceRayder42/jarvis-os
+claude plugin install jarvis-os
 ```
 
 Restart Claude Code (or start a new session) after installing.
+
+From a local clone instead, point the marketplace at the checkout:
+
+```bash
+claude plugin marketplace add /path/to/your/clone
+claude plugin install jarvis-os
+```
 
 ## Setup
 

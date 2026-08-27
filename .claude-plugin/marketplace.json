@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "jarvis-plugin",
+  "name": "jarvis-os",
   "description": "A persistent memory hub for Claude Code, plus a curated set of research and workflow skills.",
   "owner": {
     "name": "Or Gelbgisser",
