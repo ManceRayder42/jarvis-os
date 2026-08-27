@@ -14,6 +14,9 @@ own machine.
   plugin at a hub directory and toggle feature sets on.
 - A seed hub (`memory-template/`) showing the one-fact-per-file memory format
   with frontmatter, so you have a working example instead of a blank page.
+- A `/done` command that closes out a session and folds it into memory. This
+  is the one thing you have to remember to run — see
+  [The one habit you have to build](#the-one-habit-you-have-to-build).
 
 ## What this is NOT
 
@@ -72,6 +75,26 @@ the terminal that launched it. Reopening is just `/jarvis-setup` again.
 
 Until you run setup, the plugin stays quiet: one short line at session start
 telling you it isn't configured yet, nothing more.
+
+## The one habit you have to build
+
+**End every working session with `/done`** — or just tell Claude to close out
+the session, which triggers the same skill.
+
+This is the only manual step, and the only change to how you already work.
+Everything else in this plugin is automatic: memory loads on its own at
+session start, skills fire when they're relevant, nothing else asks anything
+of you.
+
+`/done` is what makes the loop close. It writes a short session note, folds
+what happened into your memory files, and commits the hub. Skip it and the
+session's decisions live only in a transcript you'll never reopen — the next
+session starts from the same memory as the last one, and the whole point of a
+memory hub quietly stops working.
+
+The failure mode is invisible, which is why it needs to become a habit: nothing
+breaks, nothing errors, memory just silently stops growing. If you only
+remember one thing from this README, make it this one.
 
 ## Obsidian — recommended, not required
 
