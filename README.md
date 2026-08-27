@@ -1,4 +1,4 @@
-# jarvis-memory
+# Jarvis OS
 
 A Claude Code plugin that gives a persistent memory hub to every session,
 from any working directory, plus a curated set of research and workflow
@@ -41,14 +41,14 @@ From a local clone (this repo, before it has a real remote):
 
 ```bash
 claude plugin marketplace add /path/to/jarvis-plugin
-claude plugin install jarvis-memory@jarvis-plugin
+claude plugin install jarvis-os@jarvis-plugin
 ```
 
 Once this repo has a GitHub remote, the same flow works from there:
 
 ```bash
 claude plugin marketplace add <owner>/jarvis-plugin
-claude plugin install jarvis-memory@jarvis-plugin
+claude plugin install jarvis-os@jarvis-plugin
 ```
 
 Restart Claude Code (or start a new session) after installing.

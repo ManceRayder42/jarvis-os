@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-memory — SessionStart hook
+// jarvis-os — SessionStart hook
 //
 // Loads <hub>/MEMORY.md into every session's context, from any working
 // directory. This exists because Claude Code's own auto-memory is keyed to
@@ -51,7 +51,7 @@ function resolveHub() {
 }
 
 function nudge() {
-  process.stdout.write('[jarvis-memory] Not set up yet — run /jarvis-setup to point this plugin at a memory hub.\n');
+  process.stdout.write('[jarvis-os] Not set up yet — run /jarvis-setup to point this plugin at a memory hub.\n');
 }
 
 function emitMemory(hub) {
