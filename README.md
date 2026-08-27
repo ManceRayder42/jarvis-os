@@ -131,8 +131,14 @@ inclusion (see `LICENSE-AUDIT.md` for the full pass):
   excerpt; check upstream if you need the newer features.
 - **Ported and genericized (originally personal workflow skills, rewritten
   for a stranger's hub):** `done`, `memory-consolidation`, `wiki-article`,
-  `learn`, `research-notebook`.
+  `learn`, `research-notebook`, `media-gen`.
 - **Ships as-is, already generic:** `grill-me`.
+
+`media-gen` ships under the **media** feature group (toggled off by default
+in Setup, above): photoreal image/video generation and upscaling via fal.ai,
+pay-per-use with your own API key. `nano-banana` is listed on the setup page
+as an install-it-yourself recommendation instead of bundled — see
+`LICENSE-AUDIT.md`.
 
 ### Recommended, install yourself: LLM Council
 
