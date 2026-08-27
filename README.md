@@ -1,84 +1,67 @@
 <p align="center">
-  <img src="assets/jarvis-os.jpg" alt="Jarvis OS" width="180">
+  <img src="assets/jarvis-os.jpg" alt="Jarvis OS" width="160">
 </p>
 
-# Jarvis OS
+<h1 align="center">Jarvis OS</h1>
 
-A Claude Code plugin that gives a persistent memory hub to every session,
-from any working directory, plus a curated set of research and workflow
-skills. It's the engine behind one person's daily-driver Claude Code setup,
-stripped of anything personal and rebuilt as something you can point at your
-own machine.
+<p align="center">
+  <b>Claude Code forgets you between sessions. This fixes that.</b><br>
+  A memory hub that loads from <i>any</i> directory, plus 9 skills that keep it fed.
+</p>
 
-## What this is
-
-- A `SessionStart` hook that loads `<your hub>/MEMORY.md` into context on
-  every session, regardless of which directory you launched Claude Code from.
-- A one-time `/jarvis-setup` command that opens a local page to point the
-  plugin at a hub directory and toggle feature sets on.
-- A seed hub (`memory-template/`) showing the one-fact-per-file memory format
-  with frontmatter, so you have a working example instead of a blank page.
-- A `/done` command that closes out a session and folds it into memory. This
-  is the one thing you have to remember to run — see
-  [The one habit you have to build](#the-one-habit-you-have-to-build).
-
-## What this is NOT
-
-- **Not a clone of anyone's personal setup.** Nothing here is tied to one
-  person's projects, vault, or preferences. What ships is the generic engine
-  plus system-level defaults — you build the memory content yourself, the
-  same way you'd fill in a fresh notes app.
-- **Not a replacement for Claude Code's built-in project memory.** It solves
-  a different problem (see "Why a hub" below) and the two coexist fine.
-- **Not going to ask for a credit card in the first five minutes.** Anything
-  that needs a paid API key ships toggled off by default.
-
-## Why a hub, not Claude Code's own memory
-
-Claude Code already has an auto-memory feature — but it's keyed to git root,
-and it silently does not load when your current directory is outside a
-repo it recognizes. That's not a bug you'll get an error for; it's just gone,
-and you won't notice until the context you expected isn't there. The hub
-sidesteps that entirely: one directory, one `MEMORY.md`, injected on every
-session start no matter where you are.
-
-## Install
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
+  <img alt="9 skills" src="https://img.shields.io/badge/skills-9-blue.svg">
+  <img alt="API keys required: 0" src="https://img.shields.io/badge/API%20keys%20required-0-brightgreen.svg">
+  <img alt="Telemetry: none" src="https://img.shields.io/badge/telemetry-none-lightgrey.svg">
+  <a href="https://github.com/ManceRayder42/jarvis-os/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/ManceRayder42/jarvis-os?style=flat"></a>
+</p>
 
 ```bash
 claude plugin marketplace add ManceRayder42/jarvis-os
 claude plugin install jarvis-os
 ```
 
-Restart Claude Code (or start a new session) after installing.
+Restart Claude Code, run `/jarvis-setup`, done.
 
-From a local clone instead, point the marketplace at the checkout:
+<p align="center">
+  <img src="assets/setup.png" alt="The /jarvis-setup page: feature toggles, hub directory, and what each skill does" width="760">
+</p>
 
-```bash
-claude plugin marketplace add /path/to/your/clone
-claude plugin install jarvis-os
-```
+---
 
-## Setup
+## The problem this solves
 
-Inside Claude Code:
+Claude Code already has memory. It's keyed to **git root**, and it silently
+does not load when your working directory isn't in a repo it recognizes.
 
-```
-/jarvis-setup
-```
+There's no error. No warning. The context you expected just isn't there, and
+you don't find out until you're halfway through explaining something for the
+fourth time.
 
-This starts a short-lived local server on `127.0.0.1` (random port, one-time
-token in the URL) and prints a link. Open it in your browser to:
+Jarvis OS sidesteps it: **one hub directory, one `MEMORY.md`, injected at every
+session start regardless of where you launched from.** A `SessionStart` hook
+does it, it takes milliseconds, and it exits silently on any error — a memory
+layer that breaks your session start is worse than no memory layer.
 
-- pick a hub directory (defaults to `~/jarvis-hub`)
-- toggle feature sets (core / research / media / telegram)
-- optionally point at an Obsidian vault
+## What you get
 
-The server has no daemon and no background process to manage — it exits on
-its own when you close the tab (or after 10 minutes idle), and it dies with
-the terminal that launched it. Reopening is just `/jarvis-setup` again.
+| | |
+|---|---|
+| **Memory that persists** | One hub dir, loaded into every session from anywhere on disk |
+| **`/done`** | Closes a session: writes a note, folds it into memory, commits the hub |
+| **`/grill-me`** | Interviews you about a plan until it actually holds together |
+| **`wiki-article`** | Turns a discovery session into a reference article instead of scrollback |
+| **`learn`** | Book and course notes into a structured, dated learning log |
+| **`defuddle`** | Any web page → clean markdown, locally |
+| **`qmd`** | Hybrid search (keyword + embeddings) over your own notes |
+| **`research-notebook`** | Multi-source research with citations, via NotebookLM |
+| **`memory-consolidation`** | Folds recent session logs into memory so patterns persist |
+| **`media-gen`** | Image/video generation via fal.ai — **off by default**, needs your own key |
 
-Until you run setup, the plugin stays quiet: one short line at session start
-telling you it isn't configured yet, nothing more.
+Core and research skills run locally and need **no account and no API key**.
+Anything that costs money ships toggled off. A free plugin shouldn't ask for a
+credit card in the first five minutes.
 
 ## The one habit you have to build
 
@@ -86,111 +69,123 @@ telling you it isn't configured yet, nothing more.
 the session, which triggers the same skill.
 
 This is the only manual step, and the only change to how you already work.
-Everything else in this plugin is automatic: memory loads on its own at
-session start, skills fire when they're relevant, nothing else asks anything
-of you.
+Everything else is automatic: memory loads on its own, skills fire when
+they're relevant, nothing else asks anything of you.
 
-`/done` is what makes the loop close. It writes a short session note, folds
-what happened into your memory files, and commits the hub. Skip it and the
-session's decisions live only in a transcript you'll never reopen — the next
-session starts from the same memory as the last one, and the whole point of a
-memory hub quietly stops working.
+`/done` is what closes the loop. Skip it and the session's decisions live only
+in a transcript you'll never reopen — the next session starts from the same
+memory as the last one.
 
-The failure mode is invisible, which is why it needs to become a habit: nothing
-breaks, nothing errors, memory just silently stops growing. If you only
-remember one thing from this README, make it this one.
+The failure mode is invisible, which is exactly why it has to become a habit:
+nothing breaks, nothing errors, memory just quietly stops growing. **If you
+remember one thing from this README, make it this one.**
 
-## Obsidian — recommended, not required
+## Setup
 
-Everything works with a plain directory of markdown files as your hub.
-Obsidian adds a UI for browsing and linking that hub, plus wikilink-style
-cross-referencing between memory files, but the plugin doesn't require it,
-check for it, or degrade if it's absent.
+```
+/jarvis-setup
+```
 
-## Remote control: Remote Control vs Telegram
+Opens a short-lived local server on `127.0.0.1` (random port, one-time token
+in the URL) and prints a link. In the browser you pick a hub directory
+(defaults to `~/jarvis-hub`), toggle feature groups, and optionally point at
+an Obsidian vault. The hub is created and seeded with a starter `MEMORY.md`
+on save.
+
+**There is no daemon.** The server exits when you close the tab (15s grace),
+hard-stops after 10 minutes idle, and dies with the terminal that launched it.
+It's a child process of your session, not something you have to remember to
+kill. Reopening is just `/jarvis-setup` again.
+
+Until you run setup, the plugin stays quiet — one line at session start saying
+it isn't configured, nothing more.
+
+**Obsidian is recommended, not required.** Everything works with a plain
+directory of markdown files. Obsidian adds browsing and wikilinks on top; the
+plugin never checks for it and doesn't degrade without it.
+
+## What this is NOT
+
+- **Not a clone of anyone's personal setup.** Nothing here is tied to one
+  person's projects, vault, or preferences. What ships is the generic engine
+  plus system-level defaults — you fill in the memory yourself.
+- **Not a replacement for Claude Code's project memory.** Different problem,
+  and the two coexist fine.
+- **Not opinionated about how you work.** Model-routing and session-hygiene
+  defaults ship as documented suggestions with a stated rationale, never as
+  the one correct way.
+
+## Reaching it from your phone
 
 The default remote path is Claude Code's own **Remote Control**
-(`claude remote-control` + claude.ai/code on your phone) — no bot token, no
-allowlist, no polling collision between concurrent sessions. Verified against
-the shipped binary (2.1.245), not just the docs, so here's what it actually
-gets you and where it stops:
+(`claude remote-control` + claude.ai/code on your phone). No bot token, no
+allowlist, nothing to configure.
+
+Verified against the shipped binary (2.1.245), not the docs — so here's where
+it actually stops:
 
 - Unavailable inside a cloud session and behind an enterprise gateway.
 - Files the agent sends do **not** reach phone/web viewers.
 - Only `effortLevel` and `ultracode` are changeable from the remote side.
-- It needs the host machine awake with a live session — it's remote control
-  of a running session, not a standalone remote agent.
+- Needs the host awake with a live session. It's remote control of a running
+  session, not a standalone remote agent.
 
-Telegram is supported but **opt-in**, off the critical path. It needs a
-BotFather token and an allowlist, and two concurrent sessions polling the
-same bot will steal each other's messages if you're not careful. The setup
-page explains how to wire it up when you actually want it; it isn't the
-default because most people don't need a second messaging surface just to
-get started.
+A Telegram bridge is supported but **opt-in and off the critical path** — it
+needs a BotFather token and an allowlist, and two concurrent sessions polling
+the same bot will steal each other's messages. The setup page explains how to
+wire it when you want it.
+
+## Skills and licenses
+
+Every shipped skill was checked against its **primary source** license before
+inclusion — not a blog post about the license, the actual LICENSE file.
+
+- **Vendored as-is (MIT):** `defuddle` (Steph Ango / kepano, byte-identical to
+  upstream) and `qmd` (Tobi Lütke). The bundled `qmd` is **not current
+  upstream** — a trimmed fork of v2.0.0, while `github.com/tobi/qmd` is at
+  v2.2.0 and has since added `--full-path`, line-slicing and `qmd doctor`.
+  Treat it as a known-older excerpt.
+- **Ported and genericized** from personal workflow skills, rewritten for a
+  stranger's hub: `done`, `memory-consolidation`, `wiki-article`, `learn`,
+  `research-notebook`, `media-gen`.
+- **Already generic, ships as-is:** `grill-me`.
+
+### Recommended, but install them yourself
+
+Left out for license reasons, not quality ones:
+
+- **`llm-council`** — a question or decision run past five independent
+  advisors, peer-reviewed, then synthesized. By
+  [Ole Lehmann](https://github.com/aiwithremy/claude-skills-llm-council),
+  methodology credited to Andrej Karpathy. Its repo ships **no LICENSE file**,
+  so there's no grant to redistribute it.
+- **`nano-banana`** — image generation and editing, with a free tier. Licensed
+  **AGPL-3.0**; bundling it would pull this entire plugin under AGPL.
+
+## Non-negotiables
+
+- **No secret is ever written into this repo, logged, or echoed back** by the
+  setup server. Keys go to your own config; the page shows a masked
+  confirmation only.
+- **No telemetry.** Nothing is sent anywhere.
+- **The local server is never a background process.** Token-authenticated,
+  loopback-only, and it kills itself.
 
 ## Repo layout
 
 ```
-.claude-plugin/plugin.json      name, description, hooks
-.claude-plugin/marketplace.json single-plugin marketplace for install
-hooks/session-start.mjs         inject hub MEMORY.md; first-run nudge to /jarvis-setup
-commands/jarvis-setup.md        slash command -> launches setup/server.mjs
-setup/server.mjs                the ephemeral local setup server
-setup/page.html                 the setup page (hub path, feature toggles)
-skills/                         vendored + genericized skills that cleared a license check (see below)
-memory-template/                seed hub: MEMORY.md index + example memory files
-config.example.json             feature toggles, hub path
-LICENSE                         MIT
+.claude-plugin/       plugin + marketplace manifests
+hooks/                SessionStart hook — injects hub MEMORY.md
+commands/             /jarvis-setup
+setup/                the ephemeral local server + its page
+skills/               the 9 shipped skills
+memory-template/      seed hub: MEMORY.md index + example memory files
 ```
 
-## Skills
+## Contributing
 
-Shipped in `skills/`, each cleared against its primary-source license before
-inclusion:
-
-- **Vendored as-is (MIT):** `defuddle` (Steph Ango / kepano, byte-identical to
-  upstream) and `qmd` (Tobi Lütke). The vendored `qmd` copy is **not current
-  upstream** — it's a trimmed, hand-edited fork based on v2.0.0, while
-  `github.com/tobi/qmd` is at v2.2.0 as of this writing and has since added
-  `--full-path`, line-slicing, `qmd doctor`, and more. Treat it as a known-older
-  excerpt; check upstream if you need the newer features.
-- **Ported and genericized (originally personal workflow skills, rewritten
-  for a stranger's hub):** `done`, `memory-consolidation`, `wiki-article`,
-  `learn`, `research-notebook`, `media-gen`.
-- **Ships as-is, already generic:** `grill-me`.
-
-`media-gen` ships under the **media** feature group (toggled off by default
-in Setup, above): photoreal image/video generation and upscaling via fal.ai,
-pay-per-use with your own API key. `nano-banana` is listed on the setup page
-as an install-it-yourself recommendation instead of bundled — its upstream
-plugin is AGPL-3.0, which this MIT-licensed plugin can't absorb, so it stays
-a separate install rather than a vendored copy.
-
-### Recommended, install yourself: LLM Council
-
-Not vendored in this repo. `llm-council` — running a question or decision
-through several independent AI advisors, peer review, and a chairman
-synthesis — is a genuinely good workflow, built by **Ole Lehmann**
-(`x.com/itsolelehmann`), methodology credited to **Andrej Karpathy**. Its
-upstream repo (`github.com/aiwithremy/claude-skills-llm-council`) ships with
-no LICENSE file and no license grant, so it can't be redistributed inside
-this MIT-licensed plugin. If you want it, install it directly from the
-source:
-
-```bash
-git clone https://github.com/aiwithremy/claude-skills-llm-council
-# then follow that repo's own install instructions
-```
-
-## Non-negotiables
-
-- No secret is ever written into this repo, logged, or echoed back by the
-  setup server. Keys go to your own environment/config; the page shows a
-  masked confirmation only.
-- No telemetry of any kind.
-- Model-routing and session-hygiene defaults ship as documented suggestions
-  with a stated rationale — never presented as the one correct way to run
-  Claude Code.
+Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Security
+matters are in [SECURITY.md](SECURITY.md).
 
 ## License
 
