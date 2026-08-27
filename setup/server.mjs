@@ -22,6 +22,9 @@ const HEARTBEAT_IDLE_MS = 15_000; // no heartbeat for this long -> exit
 const HEARTBEAT_CHECK_MS = 2_000; // how often we check for idleness
 const HARD_CAP_MS = 10 * 60 * 1000; // exit after this, no matter what
 
+const PLUGIN_ROOT = path.join(__dirname, '..');
+const MEMORY_TEMPLATE_DIR = path.join(PLUGIN_ROOT, 'memory-template');
+
 const DEFAULT_HUB = path.join(os.homedir(), 'jarvis-hub');
 const DEFAULT_CONFIG = () => ({
   hub: DEFAULT_HUB,
@@ -68,6 +71,50 @@ function writeConfig() {
   fs.mkdirSync(config.hub, { recursive: true });
   const file = path.join(config.hub, 'jarvis-config.json');
   fs.writeFileSync(file, JSON.stringify(config, null, 2) + '\n');
+}
+
+// The SessionStart hook (hooks/session-start.mjs) has no access to this
+// server's config -- it finds the hub by reading this pointer file from the
+// real user HOME. Without it the hook says "Not set up yet" forever, even
+// after a successful /api/config save. Write-then-rename so a crash mid-write
+// can't leave a truncated pointer behind.
+function writeHubPointer(hub) {
+  const pointerPath = path.join(os.homedir(), '.jarvis-hub-path');
+  try {
+    const tmp = `${pointerPath}.tmp-${process.pid}`;
+    fs.writeFileSync(tmp, hub + '\n');
+    fs.renameSync(tmp, pointerPath);
+    return { ok: true, path: pointerPath };
+  } catch (e) {
+    return { ok: false, path: pointerPath, error: e.message };
+  }
+}
+
+// A freshly created hub has no MEMORY.md, so the hook stays silently quiet
+// with no clue why. Seed it from the plugin's memory-template/ the first
+// time this hub is used -- but never touch a file that's already there, so
+// re-saving config from Setup can't clobber a user's real memory.
+function seedHub(hub) {
+  const memoryPath = path.join(hub, 'MEMORY.md');
+  if (fs.existsSync(memoryPath)) {
+    return { seeded: false, reason: 'already-populated' };
+  }
+  try {
+    fs.mkdirSync(hub, { recursive: true });
+    const entries = fs.readdirSync(MEMORY_TEMPLATE_DIR);
+    const written = [];
+    for (const entry of entries) {
+      const src = path.join(MEMORY_TEMPLATE_DIR, entry);
+      const dest = path.join(hub, entry);
+      if (!fs.statSync(src).isFile()) continue;
+      if (fs.existsSync(dest)) continue; // never overwrite
+      fs.copyFileSync(src, dest);
+      written.push(entry);
+    }
+    return { seeded: true, reason: 'created', files: written };
+  } catch (e) {
+    return { seeded: false, reason: 'error', error: e.message };
+  }
 }
 
 // Constant-time token compare that doesn't leak length via early exit --
@@ -165,7 +212,13 @@ async function handleConfig(req, res) {
     return sendJSON(res, 500, { ok: false, error: 'failed to write config' });
   }
 
-  sendJSON(res, 200, { ok: true, config });
+  // Both are idempotent and cheap, so just run them on every save rather
+  // than trying to detect "did the hub actually change" -- that also keeps
+  // the pointer self-healing if it's ever deleted out from under the hub.
+  const hubPointer = writeHubPointer(config.hub);
+  const seed = seedHub(config.hub);
+
+  sendJSON(res, 200, { ok: true, config, hub_pointer: hubPointer, seed });
 }
 
 function handleHeartbeat(req, res) {

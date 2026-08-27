@@ -580,7 +580,26 @@
     api('/api/config', { method: 'POST', body: JSON.stringify(payload) })
       .then(function (res) {
         applyState(res.config);
-        locationStatus.textContent = 'Saved.';
+
+        if (res.hub_pointer && res.hub_pointer.ok === false) {
+          locationStatus.textContent = 'Config saved, but could not write ~/.jarvis-hub-path ('
+            + res.hub_pointer.error + '). Claude Code will not find this hub until that\'s '
+            + 'fixed -- set a JARVIS_HUB environment variable as a workaround.';
+          locationStatus.className = 'status-text err';
+          return;
+        }
+
+        var msg = 'Saved.';
+        if (res.seed) {
+          if (res.seed.reason === 'created') {
+            msg += ' Created and seeded with a starter MEMORY.md.';
+          } else if (res.seed.reason === 'already-populated') {
+            msg += ' Hub already had a MEMORY.md -- left it untouched.';
+          } else if (res.seed.reason === 'error') {
+            msg += ' Warning: could not seed starter memory files (' + res.seed.error + ').';
+          }
+        }
+        locationStatus.textContent = msg;
         locationStatus.className = 'status-text ok';
       })
       .catch(function (err) {
