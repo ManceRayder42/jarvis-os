@@ -121,7 +121,7 @@ LICENSE                         MIT
 ## Skills
 
 Shipped in `skills/`, each cleared against its primary-source license before
-inclusion (see `LICENSE-AUDIT.md` for the full pass):
+inclusion:
 
 - **Vendored as-is (MIT):** `defuddle` (Steph Ango / kepano, byte-identical to
   upstream) and `qmd` (Tobi Lütke). The vendored `qmd` copy is **not current
@@ -137,8 +137,9 @@ inclusion (see `LICENSE-AUDIT.md` for the full pass):
 `media-gen` ships under the **media** feature group (toggled off by default
 in Setup, above): photoreal image/video generation and upscaling via fal.ai,
 pay-per-use with your own API key. `nano-banana` is listed on the setup page
-as an install-it-yourself recommendation instead of bundled — see
-`LICENSE-AUDIT.md`.
+as an install-it-yourself recommendation instead of bundled — its upstream
+plugin is AGPL-3.0, which this MIT-licensed plugin can't absorb, so it stays
+a separate install rather than a vendored copy.
 
 ### Recommended, install yourself: LLM Council
 

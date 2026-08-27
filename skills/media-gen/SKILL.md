@@ -25,9 +25,11 @@ each request draws down from it: **spend is real money — be surgical.**
 ## Auth
 
 Read the key from the environment first; fall back to the hub's `.env` (the
-`/jarvis-setup` page's Media section writes it there — see this plugin's
-`SPEC.md` for the hub-resolution contract). Never hardcode a path to it and
-never echo/print/log the value:
+`/jarvis-setup` page's Media section writes it there). The hub itself
+resolves the same way the SessionStart hook does: `JARVIS_HUB` env var first,
+else the pointer file at `~/.jarvis-hub-path` written by `/jarvis-setup`,
+else `~/jarvis-hub`. Never hardcode a path to it and never echo/print/log the
+value:
 
 ```bash
 hub="${JARVIS_HUB:-$(cat ~/.jarvis-hub-path 2>/dev/null)}"
