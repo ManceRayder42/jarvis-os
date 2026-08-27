@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/jarvis-os.jpg" alt="Jarvis OS" width="180">
+</p>
+
 # Jarvis OS
 
 A Claude Code plugin that gives a persistent memory hub to every session,
