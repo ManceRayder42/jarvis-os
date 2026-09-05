@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.2]
+
+### Changed
+
+- The setup console fills the screen instead of floating in the middle of it:
+  a status strip top and bottom, two rails of live readouts at the edges, and
+  the emblem as the core. The ground is near-black so the emblem composites
+  cleanly — the visible disc around it is gone.
+- Backdrop is a generated blue HUD frame, still and moving, both inlined; the
+  loop is deliberately near-static so it reads as depth rather than motion.
+- "What is this?" is now a diagram of the actual problem — sessions that start
+  empty versus sessions that read one memory folder — plus three one-line
+  facts, instead of two paragraphs nobody reads.
+
 ## [0.2.1]
 
 ### Fixed
