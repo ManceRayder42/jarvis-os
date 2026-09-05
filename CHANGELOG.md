@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.5]
+
+### Changed
+
+- Starting the install is a deliberate hold, not a click. Press and hold the
+  emblem (or the button) and the ring fills; let go early and it retreats.
+  Two accidental clicks during testing each ran a real install on the tester's
+  own machine, which is exactly the mistake a one-click primary action invites.
+- Backdrop is deep space rather than a lit floor: an almost-still plate and a
+  locked-off loop where only the haze drifts, so nothing behind the interface
+  moves enough to pull the eye.
+- More air throughout — larger display type, a smaller and quieter dock.
+
 ## [0.2.4]
 
 ### Changed
