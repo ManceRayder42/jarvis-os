@@ -1,6 +1,6 @@
 {
   "name": "jarvis-os",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A persistent memory hub for Claude Code that loads into every session from any directory, plus a curated set of research and workflow skills.",
   "author": {
     "name": "Or Gelbgisser",

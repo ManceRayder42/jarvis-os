@@ -3,7 +3,15 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.2.0] — Unreleased
+## [0.2.1]
+
+### Fixed
+
+- git is no longer treated as required, the plugin no longer assumes macOS,
+  and the setup page's hover hint no longer renders underneath a node. See the
+  commit for detail.
+
+## [0.2.0]
 
 ### Added
 
