@@ -3,6 +3,22 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.3]
+
+### Fixed
+
+- Hovering the emblem painted a black box behind it. `mix-blend-mode: screen`
+  composites against the nearest stacking context, and the hover transform
+  created one — so the artwork stopped blending with the page and rendered its
+  own black ground. The hover response is now a separate glow layer; nothing
+  isolates the blended element.
+
+### Changed
+
+- The six sectors are real buttons, not a list at the edge: larger, with an
+  icon block, and a line under each saying what it gives you and why you'd
+  open it, plus its live state.
+
 ## [0.2.2]
 
 ### Changed

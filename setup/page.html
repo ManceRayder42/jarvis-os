@@ -88,23 +88,23 @@ body {
 /* ---- three columns -------------------------------------------------------- */
 .main {
   display: grid;
-  grid-template-columns: minmax(210px, 1fr) minmax(420px, 1.9fr) minmax(210px, 1fr);
+  grid-template-columns: minmax(300px, 1fr) minmax(400px, 1.35fr) minmax(300px, 1fr);
   align-items: center;
   gap: 12px;
   padding: 10px 22px 0;
   min-height: 0;
 }
-.rail { display: flex; flex-direction: column; gap: 10px; }
+.rail { display: flex; flex-direction: column; gap: 12px; }
 .rail.right { align-items: stretch; }
 
 /* A rail item is a real control: name, live status, and a number worth reading. */
 .cell {
   position: relative;
   display: grid;
-  grid-template-columns: 26px 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  grid-template-columns: 42px 1fr auto;
+  align-items: start;
+  gap: 14px;
+  padding: 16px 18px;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--ink);
@@ -121,10 +121,18 @@ body {
   outline: none;
 }
 .rail.right .cell:hover, .rail.right .cell:focus-visible { transform: translateX(-3px); }
-.cell .glyph { font-size: 17px; color: var(--cyan); text-align: center; }
-.cell .name { font-size: 14.5px; letter-spacing: .01em; }
-.cell .sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim); margin-top: 3px; }
-.cell .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.cell .glyph {
+  font-size: 20px; color: var(--cyan); text-align: center;
+  width: 42px; height: 42px; display: grid; place-items: center;
+  border: 1px solid var(--line-soft); background: rgba(90,215,255,.06);
+}
+.cell:hover .glyph, .cell:focus-visible .glyph { border-color: var(--cyan); background: rgba(90,215,255,.14); }
+.cell .name { font-size: 17px; font-weight: 580; letter-spacing: -.01em; }
+.cell .why { font-size: 13px; color: var(--ink-dim); margin-top: 4px; line-height: 1.45; }
+.cell .sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--cyan); opacity: .85; margin-top: 7px; }
+.cell .go { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; color: var(--ink-dim); opacity: 0; transition: opacity 160ms ease; }
+.cell:hover .go, .cell:focus-visible .go { opacity: 1; }
+.cell .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); margin-top: 6px; }
 .cell[data-state="ok"]   .dot { background: var(--ok);   box-shadow: 0 0 10px var(--ok); }
 .cell[data-state="warn"] .dot { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
 .cell[data-state="bad"]  .dot { background: var(--bad);  box-shadow: 0 0 10px var(--bad); }
@@ -143,12 +151,25 @@ body {
 .progress { position: absolute; inset: -14%; width: 128%; height: 128%; pointer-events: none; }
 .progress circle { fill: none; stroke-linecap: round; transition: stroke-dashoffset 600ms ease, stroke 300ms ease; }
 
-.core { width: 100%; aspect-ratio: 1; border: 0; padding: 0; background: none; cursor: pointer; display: grid; place-items: center; transition: transform 240ms ease; }
-.core img { width: 100%; mix-blend-mode: screen; }
-.core:hover { transform: scale(1.02); }
+.core { width: 100%; aspect-ratio: 1; border: 0; padding: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.core::before {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(90,215,255,.22), rgba(90,215,255,0) 68%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+.core:hover::before, .core:focus-visible::before { opacity: 1; }
+body[data-phase="running"] .core::before { opacity: 1; animation: corepulse 1.6s ease-in-out infinite; }
+@keyframes corepulse { 50% { opacity: .45; } }
+.core img { width: 100%; mix-blend-mode: screen; position: relative; }
+
 .core:focus-visible { outline: 2px solid var(--cyan); outline-offset: 10px; }
-body[data-phase="running"] .core img { animation: breathe 1.6s ease-in-out infinite; }
-@keyframes breathe { 50% { filter: brightness(1.3); } }
+
+
 
 .headline { text-align: center; }
 .headline h1 { margin: 0; font-size: clamp(22px, 3vw, 34px); font-weight: 640; letter-spacing: -.02em; }
@@ -249,7 +270,7 @@ a { color: var(--cyan); }
   body { overflow: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rings g, .core img, .live i { animation: none !important; }
+  .rings g, .core::before, .live i { animation: none !important; }
   * { transition-duration: 1ms !important; }
 }
 </style>
@@ -310,7 +331,7 @@ a { color: var(--cyan); }
     <span class="sep"></span>
     <span id="tb-skills">—</span>
     <span id="tb-checks">—</span>
-    <span>v0.2.2</span>
+    <span>v0.2.3</span>
   </div>
 </div>
 
@@ -361,22 +382,38 @@ const state = { cfg: null, preflight: [], skills: [], telegram: null };
    hugging its middle. Each carries a live status dot and one real number --
    detail you can read at a glance without opening anything. */
 const NODES = [
-  { id: 'checkup', side: 'left',  glyph: '\u25ce', name: 'Setup',     hint: 'What Jarvis needs, and what it found.' },
-  { id: 'memory',  side: 'left',  glyph: '\u2756', name: 'Memory',    hint: 'Where Jarvis keeps what it remembers.' },
-  { id: 'skills',  side: 'left',  glyph: '\u2b21', name: 'Abilities', hint: 'What Jarvis can do. Pick any you like.' },
-  { id: 'notes',   side: 'right', glyph: '\u25c8', name: 'Notes',     hint: 'Read its memory in Obsidian, if you use it.' },
-  { id: 'phone',   side: 'right', glyph: '\u2706', name: 'Phone',     hint: 'Talk to Jarvis from Telegram. Optional.' },
-  { id: 'voice',   side: 'right', glyph: '\u25d0', name: 'Voice',     hint: 'Speak to it, and hear it answer. Optional.' },
+  { id: 'checkup', side: 'left',  glyph: '\u25ce', name: 'Setup',
+    why: 'What Jarvis needs to run, and what your machine is missing.',
+    hint: 'See what your machine already has.' },
+  { id: 'memory',  side: 'left',  glyph: '\u2756', name: 'Memory',
+    why: 'The folder it writes to and reads back at the start of every session.',
+    hint: 'Where Jarvis keeps what it remembers.' },
+  { id: 'skills',  side: 'left',  glyph: '\u2b21', name: 'Abilities',
+    why: 'Pick what Jarvis can do \u2014 research, notes, images, browser checks.',
+    hint: 'Turn abilities on and off.' },
+  { id: 'notes',   side: 'right', glyph: '\u25c8', name: 'Notes',
+    why: 'Read and edit its memory inside Obsidian, next to your own notes.',
+    hint: 'Link it to your Obsidian vault.' },
+  { id: 'phone',   side: 'right', glyph: '\u2706', name: 'Phone',
+    why: 'Message Jarvis from Telegram and get answers away from your desk.',
+    hint: 'Reach Jarvis from anywhere.' },
+  { id: 'voice',   side: 'right', glyph: '\u25d0', name: 'Voice',
+    why: 'Send it a voice note, hear the answer spoken back.',
+    hint: 'Talk to it instead of typing.' },
 ];
 
 function placeNodes() {
   NODES.forEach((n) => {
     const btn = el('button', { className: 'cell', id: 'node-' + n.id, type: 'button' });
     btn.dataset.state = 'idle';
-    btn.setAttribute('aria-label', n.name + '. ' + n.hint);
+    btn.setAttribute('aria-label', n.name + '. ' + n.why);
     const mid = el('div');
     mid.append(el('div', { className: 'name', textContent: n.name }));
-    mid.append(el('div', { className: 'sub', id: 'sub-' + n.id, textContent: '\u2014' }));
+    mid.append(el('div', { className: 'why', textContent: n.why }));
+    const foot = el('div', { className: 'sub' });
+    foot.append(el('span', { id: 'sub-' + n.id, textContent: '\u2014' }));
+    foot.append(el('span', { className: 'go', textContent: '   open \u2192' }));
+    mid.append(foot);
     btn.append(el('span', { className: 'glyph', textContent: n.glyph }), mid, el('span', { className: 'dot' }));
     const show = () => setHint(n.hint);
     const hide = () => setHint('');
