@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.4]
+
+### Changed
+
+- Redesigned around calm instead of density: the decorative HUD frame is gone,
+  the emblem stands alone in the middle on a lit stage, and the six sectors sit
+  in a dock along the bottom — one row, one word each, live state on the tile,
+  and the reason to open it on the line above.
+- Backdrop regenerated to suit that layout: an empty dark stage with a single
+  pool of cool light, and a locked-off loop where only dust drifts. The previous
+  loop breathed in and out, which read as the page scaling up and down.
+
 ## [0.2.3]
 
 ### Fixed
