@@ -315,10 +315,18 @@ function linkVaultToHub(vault, hub) {
 // user has Obsidian, even if the app lives somewhere this doesn't check)
 // counts too.
 function detectObsidian() {
-  const appCandidates = [
-    '/Applications/Obsidian.app',
-    path.join(os.homedir(), 'Applications', 'Obsidian.app'),
-  ];
+  const appCandidates = IS_WIN
+    ? [
+        path.join(process.env.LOCALAPPDATA || '', 'Obsidian', 'Obsidian.exe'),
+        path.join(process.env.PROGRAMFILES || '', 'Obsidian', 'Obsidian.exe'),
+      ]
+    : IS_MAC
+      ? ['/Applications/Obsidian.app', path.join(os.homedir(), 'Applications', 'Obsidian.app')]
+      : [
+          '/usr/bin/obsidian', '/usr/local/bin/obsidian', '/snap/bin/obsidian',
+          '/var/lib/flatpak/exports/bin/md.obsidian.Obsidian',
+          path.join(os.homedir(), '.local', 'share', 'flatpak', 'exports', 'bin', 'md.obsidian.Obsidian'),
+        ];
   const appPath = appCandidates.find((p) => fs.existsSync(p)) || null;
   const vaultPath = config.obsidian_vault || null;
   return { present: Boolean(appPath || vaultPath), app_path: appPath, vault_path: vaultPath };
@@ -449,6 +457,36 @@ function runCommand(cmd, args) {
   }
 }
 
+// Not a Mac-only plugin. Everything below picks the right command for the
+// platform it is actually running on, and says so plainly when a thing simply
+// cannot be installed automatically here.
+const IS_MAC = process.platform === 'darwin';
+const IS_WIN = process.platform === 'win32';
+
+function hasCommand(cmd) {
+  const probe = IS_WIN ? runCommand('where', [cmd]) : runCommand('which', [cmd]);
+  return Boolean(probe.ok && probe.output);
+}
+
+// One package, spelled the way each platform's usual manager spells it.
+const PACKAGES = {
+  git:      { brew: ['install', 'git'],                   apt: 'git',    dnf: 'git',    winget: 'Git.Git',            url: 'https://git-scm.com/downloads' },
+  bun:      { brew: ['install', 'oven-sh/bun/bun'],       apt: null,     dnf: null,     winget: 'Oven-sh.Bun',        url: 'https://bun.sh' },
+  tmux:     { brew: ['install', 'tmux'],                  apt: 'tmux',   dnf: 'tmux',   winget: null,                 url: 'https://github.com/tmux/tmux/wiki/Installing' },
+  ffmpeg:   { brew: ['install', 'ffmpeg'],                apt: 'ffmpeg', dnf: 'ffmpeg', winget: 'Gyan.FFmpeg',        url: 'https://ffmpeg.org/download.html' },
+  obsidian: { brew: ['install', '--cask', 'obsidian'],    apt: null,     dnf: null,     winget: 'Obsidian.Obsidian',  url: 'https://obsidian.md/download' },
+};
+
+// The line to show someone when we cannot run the install for them.
+function manualInstall(tool) {
+  const pkg = PACKAGES[tool];
+  if (!pkg) return null;
+  if (IS_MAC) return 'brew ' + pkg.brew.join(' ');
+  if (IS_WIN) return pkg.winget ? 'winget install ' + pkg.winget : ('download it from ' + pkg.url);
+  if (pkg.apt) return 'sudo apt install ' + pkg.apt + '   (or: sudo dnf install ' + pkg.dnf + ')';
+  return 'see ' + pkg.url;
+}
+
 function parseSemver(text) {
   const m = typeof text === 'string' ? text.match(/(\d+)\.(\d+)\.(\d+)/) : null;
   return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
@@ -473,9 +511,16 @@ function runPreflight() {
 
   const git = runCommand('git', ['--version']);
   if (!git.ok) {
-    checks.push({ id: 'git', label: 'git', required: true, ok: false, detail: 'not found', fix: 'brew install git' });
+    // git is NOT required. The memory is a folder of plain text files and works
+    // without it; git only adds a history, and only the `done` skill uses it.
+    // Marking it required would fail setup on a machine that never needed it.
+    checks.push({
+      id: 'git', label: 'git', required: false, ok: false,
+      detail: 'not installed -- memory still works, you just get no history',
+      fix: manualInstall('git'),
+    });
   } else {
-    checks.push({ id: 'git', label: 'git', required: true, ok: true, detail: git.output });
+    checks.push({ id: 'git', label: 'git', required: false, ok: true, detail: git.output });
 
     // The `done` skill commits the hub -- without a configured identity
     // that fails with git's confusing "Please tell me who you are" error.
@@ -520,21 +565,21 @@ function runPreflight() {
   checks.push({
     id: 'bun', label: 'bun', required: false, ok: bun.ok,
     detail: bun.ok ? bun.output : 'not found -- the official Telegram plugin\'s MCP runs on it',
-    fix: bun.ok ? undefined : 'brew install oven-sh/bun/bun',
+    fix: bun.ok ? undefined : manualInstall('bun'),
   });
 
   const tmux = runCommand('tmux', ['-V']);
   checks.push({
     id: 'tmux', label: 'tmux', required: false, ok: tmux.ok,
     detail: tmux.ok ? tmux.output : 'not found',
-    fix: tmux.ok ? undefined : 'brew install tmux',
+    fix: tmux.ok ? undefined : manualInstall('tmux'),
   });
 
   const ffmpeg = runCommand('ffmpeg', ['-version']);
   checks.push({
     id: 'ffmpeg', label: 'ffmpeg', required: false, ok: ffmpeg.ok,
     detail: ffmpeg.ok ? ffmpeg.output.split('\n')[0] : 'not found -- needed for voice scripts',
-    fix: ffmpeg.ok ? undefined : 'brew install ffmpeg',
+    fix: ffmpeg.ok ? undefined : manualInstall('ffmpeg'),
   });
 
   // Not a CLI tool -- detected by app-bundle presence (or a configured
@@ -543,7 +588,7 @@ function runPreflight() {
   checks.push({
     id: 'obsidian', label: 'Obsidian', required: false, ok: obsidian.present,
     detail: obsidian.app_path || (obsidian.vault_path ? 'not found as an app, but a vault path is configured' : 'not found'),
-    fix: obsidian.present ? undefined : 'brew install --cask obsidian',
+    fix: obsidian.present ? undefined : manualInstall('obsidian'),
   });
 
   return checks;
@@ -883,10 +928,14 @@ async function handleSetupAll(req, res) {
   });
 
   step('history', 'Turning on its history', () => {
+    // Best effort by design: without git the memory is still a folder of text
+    // files that works exactly the same, so a machine with no git gets a note,
+    // not a failed step.
+    if (!hasCommand('git')) return { skipped: true, reason: 'git not installed' };
     const alreadyRepo = fs.existsSync(path.join(config.hub, '.git'));
     if (!alreadyRepo) {
       const init = runCommand('git', ['-C', config.hub, 'init']);
-      if (!init.ok) throw new Error(init.output || init.error || 'git init failed');
+      if (!init.ok) return { skipped: true, reason: init.output || 'git init failed' };
     }
     const has = (k) => {
       const r = runCommand('git', ['-C', config.hub, 'config', k]);
@@ -939,12 +988,7 @@ async function handleSetupAll(req, res) {
 // POST /api/install-tool { tool } -- installs one known optional tool through
 // Homebrew, and only on an explicit request. The allowlist is the whole safety
 // model: nothing here takes a package name from the caller.
-const INSTALLABLE = {
-  bun: ['install', 'bun'],
-  tmux: ['install', 'tmux'],
-  ffmpeg: ['install', 'ffmpeg'],
-  obsidian: ['install', '--cask', 'obsidian'],
-};
+const INSTALLABLE = Object.keys(PACKAGES).filter((k) => k !== 'git');
 
 async function handleInstallTool(req, res) {
   let body;
@@ -954,21 +998,31 @@ async function handleInstallTool(req, res) {
     return sendJSON(res, 400, { ok: false, error: 'invalid JSON' });
   }
   const tool = String(body.tool || '');
-  if (!Object.prototype.hasOwnProperty.call(INSTALLABLE, tool)) {
+  if (!INSTALLABLE.includes(tool)) {
     return sendJSON(res, 400, { ok: false, error: 'unknown tool: ' + tool });
   }
-  const brew = runCommand('which', ['brew']);
-  if (!brew.ok) {
+  const pkg = PACKAGES[tool];
+
+  // Pick the manager this machine actually has. Anything that needs a password
+  // (apt, dnf) is never run from here -- a web page silently invoking sudo is
+  // not something a user can consent to, so those become a copyable line.
+  let cmd = null;
+  let args = null;
+  if (IS_MAC && hasCommand('brew')) { cmd = 'brew'; args = pkg.brew; }
+  else if (IS_WIN && pkg.winget && hasCommand('winget')) { cmd = 'winget'; args = ['install', '--silent', '--accept-package-agreements', '--accept-source-agreements', '--id', pkg.winget]; }
+
+  if (!cmd) {
     return sendJSON(res, 200, {
       ok: false,
-      error: 'no-homebrew',
-      manual: 'brew ' + INSTALLABLE[tool].join(' '),
-      url: 'https://brew.sh',
+      error: 'no-installer',
+      manual: manualInstall(tool),
+      url: pkg.url,
     });
   }
-  const r = runCommand('brew', INSTALLABLE[tool]);
+
+  const r = runCommand(cmd, args);
   PREFLIGHT = runPreflight();
-  sendJSON(res, 200, { ok: r.ok, tool, detail: (r.output || r.error || '').slice(-2000) });
+  sendJSON(res, 200, { ok: r.ok, tool, via: cmd, detail: (r.output || r.error || '').slice(-2000) });
 }
 
 // POST /api/telegram-token { value } -- writes the bot token where the official
@@ -1065,12 +1119,15 @@ server.listen(0, '127.0.0.1', () => {
   // is different: the SERVER opening the human's actual browser for them,
   // same as `npm create vite` or similar CLIs do. Best-effort and silent;
   // the URL above is printed either way so there's always a fallback.
-  if (process.platform === 'darwin') {
-    try {
-      spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
-    } catch {
-      // ignore -- printed URL is the fallback
-    }
+  try {
+    const opener = IS_MAC
+      ? ['open', [url]]
+      : IS_WIN
+        ? ['cmd', ['/c', 'start', '', url]]
+        : ['xdg-open', [url]];
+    spawn(opener[0], opener[1], { stdio: 'ignore', detached: true }).unref();
+  } catch {
+    // ignore -- the printed URL is the fallback
   }
 
   const failing = PREFLIGHT.filter((c) => c.required && !c.ok);

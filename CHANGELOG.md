@@ -73,6 +73,16 @@ All notable changes to this project are documented here. Format follows
 
 ### Changed
 
+- **git is no longer required.** The memory is a folder of plain text files
+  and works without it; git only adds a history, and only `/done` uses it.
+  Preflight marks it optional, and the one-press setup skips the history step
+  with a note instead of failing when git is absent.
+- **Not macOS-only.** Package suggestions, the one-click installer, browser
+  opening and Obsidian detection now resolve per platform (Homebrew on macOS,
+  winget on Windows, apt/dnf shown as a copyable line on Linux because a web
+  page must never invoke `sudo` on someone's behalf). The Telegram bridge's
+  launchd files remain macOS-specific and are labelled as such.
+
 - **`setup/server.mjs`/`setup/page.html`** (a parallel pass over this same
   release): a 180s first-heartbeat grace period before the normal 15s idle
   timeout applies (the agent-to-human round trip of printing a URL and
