@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.jarvis.telegram-watchdog</string>
+
+  <!-- telegram-watchdog.sh is a long-running loop (its own internal 15s
+       sleep), not a job that should be re-invoked on an interval. RunAtLoad
+       starts it once; KeepAlive restarts it if it ever exits (crash, kill -9
+       during a machine sleep/wake cycle) — its own singleton lock file makes
+       a duplicate launch a harmless no-op. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__CLAUDE_PLUGIN_ROOT__/bridge/telegram-watchdog.sh</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+
+  <!-- The watchdog also writes its own detailed log to
+       ~/Library/Logs/jarvis-telegram-watchdog.log (see the script) — this is
+       only stdout/stderr from the shell itself (startup errors, a crash
+       traceback if the script dies before glog() is defined). -->
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/jarvis-telegram-watchdog-launch.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/jarvis-telegram-watchdog-launch.log</string>
+
+  <!-- Optional: see the matching comment in com.jarvis.telegram-bridge.plist.tmpl. -->
+  <!--
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>JARVIS_HUB</key><string>__HOME__/jarvis-hub</string>
+  </dict>
+  -->
+</dict>
+</plist>

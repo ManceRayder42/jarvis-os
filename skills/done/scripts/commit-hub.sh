@@ -14,6 +14,8 @@
 #   commit-hub.sh --slug "<kebab-slug>" [--dry-run]
 #
 # Output (parse these — they're the report for the confirmation step):
+#   initialized:hub <path>        (first run against a non-git hub only)
+#   cleaned:hub <file> [file...]  (one-time placeholder removal — see below)
 #   committed:hub <hash> <n> files
 #   nothing:hub
 #   pushed:hub <branch> -> <remote>
@@ -62,8 +64,26 @@ done
 # by the user, same reasoning as never touching CLAUDE.md in a code repo.
 HUB_PATHS="sessions wiki patterns.md conversation-log.md CONTEXT.md daily-notes ideas research learning"
 
-git -C "$hub" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
-  echo "nothing:hub"; exit 0; }
+# A hub that was never git-initialized used to make this script exit
+# silently with "nothing:hub" forever, so a fresh /jarvis-setup install never
+# got version history unless the user remembered to `git init` it themselves
+# first. There's no reason a memory hub can't be a repo — initialize it on
+# first use instead.
+if ! git -C "$hub" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if ! git -C "$hub" init -q 2>/tmp/jarvis-done-init-err; then
+    echo "error:hub git init failed: $(head -1 /tmp/jarvis-done-init-err | cut -c1-120)"
+    exit 0
+  fi
+  echo "initialized:hub $hub"
+fi
+
+# git commit fails with a raw, confusing error ("Author identity unknown...")
+# when user.name/user.email were never set anywhere (local or global). Catch
+# it here with a plain-English fix instead of surfacing that error.
+if [ -z "$(git -C "$hub" config user.name 2>/dev/null)" ] || [ -z "$(git -C "$hub" config user.email 2>/dev/null)" ]; then
+  echo "error:hub git identity not set — run: git config --global user.name \"Your Name\" && git config --global user.email \"you@example.com\" (or without --global to set it for this hub only), then re-run /done"
+  exit 0
+fi
 
 # Refuse to act inside an unfinished operation — a half-rebased hub is the
 # user's call to resolve, not something to bury under an automated commit.
@@ -80,6 +100,43 @@ for p in $HUB_PATHS; do
   existing+=("$p")
 done
 [ ${#existing[@]} -gt 0 ] || { echo "nothing:hub"; exit 0; }
+
+# --- one-time placeholder cleanup -------------------------------------------
+# setup/server.mjs seeds a fresh hub from memory-template/ so the SessionStart
+# hook isn't silently empty: MEMORY.md plus three example-*.md files that
+# exist only to show the format. Shipping forever, they get injected into
+# every session's context alongside real memory. The first time /done
+# actually has something real to commit is a reasonable proxy for "the hub is
+# in real use now" — that's the moment to retire them, rather than making the
+# user remember to delete three files by hand. Deliberately narrow: a
+# placeholder is only removed if it still contains the literal marker text
+# ("This is a placeholder."), so a file the user kept and genuinely repurposed
+# under the same name is never touched.
+if [ "$dry" != "1" ]; then
+  removed_placeholders=()
+  for f in example-feedback-rule.md example-project-note.md example-user-fact.md; do
+    fp="$hub/$f"
+    [ -f "$fp" ] || continue
+    grep -q "This is a placeholder\." "$fp" 2>/dev/null || continue
+    # Only stage the removal if git already knows this path — deleting a file
+    # that was never tracked (e.g. this is also the very first commit this
+    # hub has ever had) and then handing its name to `git add` fails the
+    # whole add with "pathspec did not match any files", since there is
+    # nothing left on disk OR in the index for it to match.
+    was_tracked=0
+    git -C "$hub" ls-files --error-unmatch -- "$f" >/dev/null 2>&1 && was_tracked=1
+    rm -f "$fp"
+    removed_placeholders+=("$f")
+    [ "$was_tracked" = "1" ] && existing+=("$f")
+  done
+  if [ ${#removed_placeholders[@]} -gt 0 ] && [ -f "$hub/MEMORY.md" ]; then
+    for f in "${removed_placeholders[@]}"; do
+      sed -i '' "\\|]($f)|d" "$hub/MEMORY.md"
+    done
+    existing+=("MEMORY.md")
+  fi
+  [ ${#removed_placeholders[@]} -gt 0 ] && echo "cleaned:hub ${removed_placeholders[*]}"
+fi
 
 if [ "$dry" = "1" ]; then
   staged="$(git -C "$hub" add --dry-run -- "${existing[@]}" 2>/dev/null | wc -l | tr -d ' ')"

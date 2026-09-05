@@ -4,7 +4,15 @@ Load this only when the main flow hits something unusual. Common case is in `SKI
 
 ## No git repo at all (`hub_is_git=no`)
 
-`commit-hub.sh` returns `nothing:hub` and exits 0 — nothing breaks. In the confirmation, swap the commit line for: `Commit: not a git repo — nothing committed.` The session note still gets written to `<hub>/sessions/`. This is a normal, supported state — the hub is not required to be a git repo at all (see the plugin's README).
+`commit-hub.sh` no longer treats this as a dead end: if there is real dirt to stage, it runs `git init` on the hub itself and proceeds with a normal commit, reporting `initialized:hub <path>` before the usual `committed:hub` line. Mention the initialization in the confirmation (`Hub: initialized as a git repo, then N files committed.`) — it's a one-time, unsurprising event, not an error.
+
+It only stays a no-op (`nothing:hub`, exit 0) when there is genuinely nothing to stage — an `hub_is_git=no` hub with no dirt at all. In that case the session note still gets written to `<hub>/sessions/`; swap the commit line for `Commit: nothing to commit yet.`
+
+If `git init` itself fails (read-only filesystem, permissions), it reports `error:hub git init failed: <message>` — surface that plainly rather than retrying.
+
+## Git identity never configured
+
+If the hub's git config has no `user.name`/`user.email` (checked local-or-global, so a normal `git config --global` setup elsewhere on the machine satisfies this), `commit-hub.sh` reports `error:hub git identity not set — run: git config --global user.name "Your Name" && git config --global user.email "you@example.com" ...` instead of letting the raw `git commit` "Author identity unknown" error surface. Quote the command verbatim in the confirmation — there's nothing else to do until the user runs it.
 
 ## Hub repo in detached HEAD or mid-rebase
 

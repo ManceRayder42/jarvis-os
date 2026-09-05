@@ -179,7 +179,7 @@ The articles you just wrote are uncommitted; step 6 re-reads git state at commit
 
 ### 6. Commit the hub (only what's dirty)
 
-The point of this step is that nothing you just wrote stays unversioned. If `hub_is_git=no`, skip this whole step — there's nothing to commit and that's not an error (see edge cases).
+The point of this step is that nothing you just wrote stays unversioned. Always run it when there's anything to commit — `hub_is_git=no` from step 1 is no longer a reason to skip: `commit-hub.sh` initializes the hub as a git repo on its own the first time it has something real to stage (see the edge cases entry). It only reports `nothing:hub` when there is genuinely no dirt.
 
 One call does the whole step — staging, the push decision:
 
@@ -195,6 +195,8 @@ Parse its output for the confirmation:
 
 | Line | Meaning |
 |---|---|
+| `initialized:hub <path>` | this was the hub's first commit ever — it just became a git repo |
+| `cleaned:hub <files>` | one-time placeholder removal fired this run (see below) — name the files in the confirmation |
 | `committed:hub <hash> <n> files` | landed |
 | `nothing:hub` | clean, nothing owed |
 | `pushed:hub <branch> -> <remote>` | synced |
@@ -204,6 +206,9 @@ Parse its output for the confirmation:
 What it guarantees, so you don't have to re-verify:
 
 - **Allowlist only** — `sessions wiki patterns.md conversation-log.md CONTEXT.md daily-notes ideas research learning`. Any file that looks hand-curated (`MEMORY.md`, any `user_*`/`project_*`/`feedback_*`/`reference_*` memory file) can never be staged by this script — those are the user's own edit-in-progress, same reasoning as never touching `CLAUDE.md` in a code repo.
+- **One narrow, deliberate exception to the line above:** the very first time a run has real content to commit, it also retires `memory-template`'s seeded `example-*.md` placeholders (`example-feedback-rule.md`, `example-project-note.md`, `example-user-fact.md`) and their index lines in `MEMORY.md` — but only files that still contain the literal placeholder marker text, so a file you kept and genuinely repurposed under that name is never touched. Rationale: those three files exist only to show the memory format; shipping forever, they'd get injected into every session's context alongside your real memory. "The hub's first real commit" is the natural signal that you're actually using it now. In practice this fires once, ever, per hub.
+- **Initializes the hub as a git repo on first use** if it wasn't one already, instead of silently doing nothing — a hub with no version history was the old failure mode (see edge cases).
+- **Checks git identity before committing.** If `user.name`/`user.email` were never set (local or global), it reports `error:hub git identity not set — run: git config --global user.name "Your Name" && git config --global user.email "you@example.com" ...` — surface that verbatim; there is nothing to retry until the user runs it.
 - **Refuses to commit mid-rebase/merge** — reports `error:` instead of burying an unfinished operation.
 - **Never auto-pushes** — the hub holds personal memory by definition, so pushing requires an explicit `JARVIS_HUB_PUSH=1` opt-in even when a remote and upstream exist. See the script's own comment for the reasoning.
 

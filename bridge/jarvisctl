@@ -1,0 +1,167 @@
+#!/bin/bash
+# jarvisctl — control the bridge (tmux session, default name "jarvis").
+#
+# The bridge session runs this on itself when you send a command from
+# Telegram. The plugin injects Telegram text as plain words, so /new and
+# /model mean nothing to Claude Code by themselves — this script is what
+# turns them into real actions. See CLAUDE.bridge.md for how a running
+# session is told to route these.
+#
+#   jarvisctl new                 wrap up to memory (/jarvis-os:done), then restart fresh
+#   jarvisctl restart             same; SKIP_DONE=1 to skip the wrap-up
+#   jarvisctl model <name>        opus | sonnet | fable | full model id
+#   jarvisctl effort <level>      low | medium | high
+#   jarvisctl compact [note]      compact the running context in place
+#   jarvisctl context             post the /context report to Telegram
+#   jarvisctl status              model, effort, mode, uptime
+set -u
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+BRIDGE_DIR="$PLUGIN_ROOT/bridge"
+
+resolve_hub() {
+  if [ -n "${JARVIS_HUB:-}" ]; then printf '%s' "$JARVIS_HUB"; return; fi
+  if [ -f "$HOME/.jarvis-hub-path" ]; then
+    local p
+    p="$(tr -d '[:space:]' < "$HOME/.jarvis-hub-path")"
+    if [ -n "$p" ]; then printf '%s' "$p"; return; fi
+  fi
+  printf '%s' "$HOME/jarvis-hub"
+}
+HUB="$(resolve_hub)"
+HUB="${HUB/#\~/$HOME}"
+
+SESSION="${JARVIS_TMUX_SESSION:-jarvis}"
+ENVF="$HUB/bridge.env"
+LOG="$HUB/logs/telegram-bridge.log"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
+
+mkdir -p "$HUB/logs"
+log() { echo "$(date '+%F %T') jarvisctl: $*" >> "$LOG"; }
+
+setkv() {  # setkv KEY value
+    touch "$ENVF"
+    if grep -q "^$1=" "$ENVF" 2>/dev/null; then
+        sed -i '' "s|^$1=.*|$1=$2|" "$ENVF"
+    else
+        echo "$1=$2" >> "$ENVF"
+    fi
+}
+
+alive() { tmux has-session -t "$SESSION" 2>/dev/null; }
+busy()  { tmux capture-pane -pt "$SESSION" 2>/dev/null | grep -q "esc to interrupt"; }
+
+require_tmux() {
+    alive && return 0
+    echo "jarvisctl: no tmux session '$SESSION'."
+    echo "The bridge is down. If you installed telegram-watchdog.sh it restarts within 15s;"
+    echo "otherwise start it yourself: bash \"$BRIDGE_DIR/telegram-bridge.sh\""
+    exit 1
+}
+
+graceful() {
+    # 1. let the reply that triggered this reach Telegram first
+    sleep 4
+    # 2. wait for the current turn to end (max 3 min), then queue the wrap-up
+    for _ in $(seq 1 90); do busy || break; sleep 2; done
+    # Namespaced: this skill ships inside the jarvis-os plugin, so its slash
+    # command is /jarvis-os:done, not the bare /done a locally-defined skill
+    # would get.
+    tmux send-keys -t "$SESSION" "/jarvis-os:done" Enter
+    sleep 2; tmux send-keys -t "$SESSION" Enter
+    # 3. wait for it to start (max 30s) and to finish (max 5 min)
+    for _ in $(seq 1 15);  do busy && break; sleep 2; done
+    for _ in $(seq 1 150); do busy || break; sleep 2; done
+    sleep 3
+    # 4. drop the pinned conversation id so the bridge starts a genuinely fresh
+    #    session, then kill; the watchdog (if installed) relaunches within 15s
+    sed -i '' '/^BRIDGE_SESSION_ID=/d' "$ENVF" 2>/dev/null
+    rm -f "$HUB/logs/.bridge-continue"
+    tmux kill-session -t "$SESSION" 2>/dev/null
+    log "session wrapped up with /jarvis-os:done and restarted fresh"
+}
+
+context_report() {
+    # Claude Code exposes no API for context usage, so the report is scraped off
+    # the pane after typing /context. Typing it mid-turn would only queue it as a
+    # message, so wait for the turn to end first (up to 30 min).
+    for _ in $(seq 1 900); do busy || break; sleep 2; done
+    tmux send-keys -t "$SESSION" "/context" Enter
+    local pane out
+    for _ in $(seq 1 15); do
+        sleep 2
+        pane=$(tmux capture-pane -pt "$SESSION" -S -400 2>/dev/null)
+        printf '%s' "$pane" | grep -qi 'context usage' && break
+    done
+    # Keep the LAST "Context Usage" block up to the auto-compact line, stripping
+    # the glyph grid on the left and keeping the text on the right.
+    out=$(printf '%s\n' "$pane" \
+        | awk '/[Cc]ontext [Uu]sage/{buf=""; f=1} f{buf=buf $0 "\n"} /Auto-compact window/{if(f){last=buf}; f=0} END{printf "%s", last}' \
+        | sed -E 's/^[[:space:]]*⎿[[:space:]]*//; s/^[[:space:]]*([⛁⛀⛶⛝░▒▓█][[:space:]]*)+//; s/^[[:space:]]+//' \
+        | grep -v '^[[:space:]]*$' | grep -vi '^estimated usage by category$')
+    if [ -z "$out" ]; then
+        # Fallback for a changed TUI layout: degrade to the numbers, not silence.
+        out=$(printf '%s\n' "$pane" | grep -Ei 'tokens \(|free space|autocompact' \
+              | sed -E 's/^[[:space:]]*([⛁⛀⛶⛝][[:space:]]*)+//' | tail -12)
+    fi
+    [ -n "$out" ] || out="Could not read the context report from the session pane."
+    log "context report sent (${#out} chars)"
+    "$BRIDGE_DIR/tg-send.sh" "Context window:
+$out" >/dev/null 2>&1
+}
+
+restart() {
+    require_tmux
+    if [ "${SKIP_DONE:-0}" = "1" ]; then
+        # No wrap-up: this is a config reload, so keep the conversation.
+        : > "$HUB/logs/.bridge-continue"
+        ( sleep 4; tmux kill-session -t "$SESSION" 2>/dev/null ) >/dev/null 2>&1 &
+        echo "restarting in ~4s without a wrap-up (conversation preserved)"
+    else
+        ( graceful ) >/dev/null 2>&1 &
+        echo "wrapping up with /jarvis-os:done, then restarting (1-5 min)"
+    fi
+}
+
+case "${1:-}" in
+    new|restart) restart ;;
+    model)
+        case "${2:-}" in
+            opus)   m="opus" ;;
+            sonnet) m="sonnet" ;;
+            fable)  m="claude-fable-5-1" ;;
+            "")     echo "usage: jarvisctl model <opus|sonnet|fable|model-id>"; exit 1 ;;
+            *)      m="$2" ;;
+        esac
+        setkv MODEL "$m"; echo "model set to $m"; restart ;;
+    effort)
+        case "${2:-}" in
+            low|medium|high) setkv EFFORT "$2"; echo "effort set to $2"; restart ;;
+            *) echo "usage: jarvisctl effort <low|medium|high>"; exit 1 ;;
+        esac ;;
+    compact)
+        require_tmux; shift
+        tmux send-keys -t "$SESSION" "/compact ${*:-}" Enter
+        echo "compact queued; it runs as soon as the current turn finishes" ;;
+    context)
+        require_tmux
+        ( context_report ) >/dev/null 2>&1 &
+        echo "context report queued; it reaches Telegram once the current turn ends" ;;
+    status)
+        MODEL=""; EFFORT=""
+        . "$ENVF" 2>/dev/null || true
+        echo "model:  ${MODEL:-default}"
+        echo "effort: ${EFFORT:-default}"
+        if alive; then
+            created=$(tmux display -p -t "$SESSION" '#{session_created}' 2>/dev/null)
+            echo "mode:   $(tmux capture-pane -pt "$SESSION" 2>/dev/null | grep -o 'bypass permissions on\|accept edits on\|auto mode on' | head -1)"
+            secs=$(( $(date +%s) - created ))
+            printf 'uptime: %dh %02dm (started %s)\n' $((secs/3600)) $(((secs%3600)/60)) "$(date -r "$created" '+%H:%M')"
+        else
+            echo "uptime: no tmux session (down, or restarting)"
+        fi
+        echo "health: $("$BRIDGE_DIR/telegram-watchdog.sh" --status 2>/dev/null | grep -E 'own mcp|rival mcp' | tr '\n' ' ')"
+        echo "log:    $LOG" ;;
+    *) sed -n '8,17p' "$0"; exit 1 ;;
+esac

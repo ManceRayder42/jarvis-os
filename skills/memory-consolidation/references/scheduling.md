@@ -26,38 +26,67 @@ Create `~/Library/LaunchAgents/com.jarvis.memory-consolidation.plist`:
   <key>ProgramArguments</key>
   <array>
     <string>/opt/homebrew/bin/node</string>
-    <string>/path/to/jarvis-plugin/skills/memory-consolidation/scripts/memory-tick.mjs</string>
+    <string>__CLAUDE_PLUGIN_ROOT__/skills/memory-consolidation/scripts/memory-tick.mjs</string>
   </array>
   <key>StartInterval</key><integer>7200</integer>
   <key>RunAtLoad</key><true/>
-  <key>StandardOutPath</key><string>/tmp/jarvis-memory-consolidation.log</string>
-  <key>StandardErrorPath</key><string>/tmp/jarvis-memory-consolidation.log</string>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/jarvis-memory-consolidation-launch.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/jarvis-memory-consolidation-launch.log</string>
 </dict>
 </plist>
 ```
 
-Replace `/path/to/jarvis-plugin` with wherever this plugin is actually
-checked out (`claude plugin marketplace add` doesn't move the files, so this
-is the repo's own path on disk). `StartInterval` of `7200` ticks every 2
-hours; each tick is a near-no-op unless a run is actually due.
+Save the block above as `~/Library/LaunchAgents/com.jarvis.memory-consolidation.plist`,
+then substitute the two placeholders in place — `sed` is easier than
+hand-editing, and avoids typos in a path you'll rarely touch again:
+
+```bash
+PLUGIN_ROOT="$(echo $CLAUDE_PLUGIN_ROOT)"   # run inside a Claude Code session with this plugin enabled
+PLIST=~/Library/LaunchAgents/com.jarvis.memory-consolidation.plist
+sed -i '' -e "s#__CLAUDE_PLUGIN_ROOT__#$PLUGIN_ROOT#g" -e "s#__HOME__#$HOME#g" "$PLIST"
+```
+
+`CLAUDE_PLUGIN_ROOT` is only set while a plugin-enabled session is running —
+`claude plugin marketplace add` doesn't move the files, so this is just the
+repo's own path on disk (`find ~/.claude/plugins/cache -maxdepth 2 -iname
+'jarvis-os'` finds it without a live session). launchd plists don't expand
+shell variables themselves, which is why the substitution has to happen
+before you load it, not inside the XML.
+
+Logging to `~/Library/Logs/` matters, not just as a nicety: `/tmp` is cleared
+by macOS, and this is the plist's own stdout/stderr only — `run-agent.mjs`
+(which `memory-tick.mjs` calls internally) already logs the actual
+consolidation run to `~/Library/Logs/memory-consolidation.log` for the same
+reason. This plist's own log only ever has something in it if the node
+process fails to start at all.
+
+`StartInterval` of `7200` ticks every 2 hours; each tick is a near-no-op
+unless a run is actually due.
 
 Load it:
 
 ```bash
-launchctl load ~/Library/LaunchAgents/com.jarvis.memory-consolidation.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.jarvis.memory-consolidation.plist
 ```
 
 Unload to stop:
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.jarvis.memory-consolidation.plist
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.jarvis.memory-consolidation.plist
 ```
 
 ## Linux / cron
 
 ```cron
-0 */2 * * * /usr/bin/node /path/to/jarvis-plugin/skills/memory-consolidation/scripts/memory-tick.mjs >> ~/.local/state/jarvis-memory-consolidation.log 2>&1
+0 */2 * * * /usr/bin/node __CLAUDE_PLUGIN_ROOT__/skills/memory-consolidation/scripts/memory-tick.mjs >> ~/.local/state/jarvis-memory-consolidation-launch.log 2>&1
 ```
+
+Replace `__CLAUDE_PLUGIN_ROOT__` with the plugin's real path on disk — same
+resolution as the macOS section above (`echo $CLAUDE_PLUGIN_ROOT` from a
+live session, or search the plugin cache directory for it). `memory-tick.mjs`
+already resolves its own hub and logs the actual run through `run-agent.mjs`
+to `~/.local/state/memory-consolidation.log` on Linux — the redirect above
+only catches a failure to start node at all.
 
 `memory-tick.mjs` skips the macOS-only `caffeinate` wrap automatically on
 Linux — cron itself doesn't run while the machine is fully off, same

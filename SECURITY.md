@@ -55,7 +55,36 @@ Controls, all of them load-bearing:
   any other supervisor.
 
 There is no background process to find, audit, or remember to kill, because
-there is no background process.
+there is no background process — for the setup server, and for the plugin as
+installed by default. The exceptions are both opt-in and covered below.
+
+## The Telegram bridge is a real background process — read this before installing it
+
+Unlike the setup server, `bridge/telegram-bridge.sh` and
+`bridge/telegram-watchdog.sh` (see `bridge/README.md`) are exactly what
+SECURITY posture elsewhere on this page argues against: a long-running tmux
+session and a launchd-supervised loop, installed with one command and
+surviving reboots. That tradeoff is deliberate and disclosed, not hidden —
+you install it yourself, nothing in this plugin turns it on for you, and
+`bridge/README.md` gives the exact uninstall commands.
+
+Two things to weigh before you do:
+
+1. **It runs with `--permission-mode auto`.** A session waiting on an
+   interactive permission prompt never replies to a Telegram message, so the
+   bridge can't run in the plugin's normal confirm-before-acting mode. That
+   means the bridge session can take action without a per-step confirmation
+   from you, over a channel (Telegram) that isn't this terminal.
+2. **Telegram allows exactly one consumer of a bot token's `getUpdates` at a
+   time.** If the telegram channel plugin is ever enabled a second way on the
+   same machine — a project's `.claude/settings.json`, a second bridge, a
+   dev session you forgot was still open — Telegram silently cuts one of them
+   off. The loser keeps running and looks healthy from the outside; it is
+   simply deaf, and every message that arrives while it's deaf is consumed by
+   the winner and permanently unrecoverable, not delayed. `telegram-watchdog.sh`
+   detects and recovers from this (see its header comment), but the safe
+   default is structural: only ever enable the telegram plugin via
+   `bridge/telegram-bridge.sh`'s own launch line, never in project settings.
 
 ## Scope
 
