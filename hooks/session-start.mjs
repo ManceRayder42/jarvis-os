@@ -54,6 +54,18 @@ function nudge() {
   process.stdout.write('[jarvis-os] Not set up yet — run /jarvis-setup to point this plugin at a memory hub.\n');
 }
 
+// Working rules live next to MEMORY.md. Optional: absent or unreadable means
+// nothing is added. Capped so MEMORY.md + rules stay inside the session budget.
+function readWorkingRules(hub) {
+  try {
+    const rules = fs.readFileSync(path.join(hub, 'working-rules.md'), 'utf8');
+    if (Buffer.byteLength(rules, 'utf8') > MAX_BYTES) return '';
+    return '\n\n# Working rules (' + hub + '/working-rules.md)\n\n' + rules;
+  } catch (e) {
+    return '';
+  }
+}
+
 function emitMemory(hub) {
   const memoryPath = path.join(hub, 'MEMORY.md');
   let content;
@@ -69,7 +81,7 @@ function emitMemory(hub) {
 
   const byteLength = Buffer.byteLength(content, 'utf8');
   if (byteLength <= MAX_BYTES) {
-    process.stdout.write('# Jarvis memory (' + hub + '/MEMORY.md)\n\n' + content);
+    process.stdout.write('# Jarvis memory (' + hub + '/MEMORY.md)\n\n' + content + readWorkingRules(hub));
     return;
   }
 
@@ -83,7 +95,7 @@ function emitMemory(hub) {
     + Math.round(byteLength / 1024) + 'KB, over the ' + Math.round(MAX_BYTES / 1024)
     + 'KB session-start budget; showing index lines only)\n\n';
   out += indexLines.join('\n');
-  process.stdout.write(out);
+  process.stdout.write(out + readWorkingRules(hub));
 }
 
 try {

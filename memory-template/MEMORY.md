@@ -13,6 +13,7 @@ _Last updated: (edit this whenever you add or change a memory)_
 - [Example Project Note](example-project-note.md) — placeholder: replace with an active project's context
 
 ## Feedback
+- [How Claude works here](working-rules.md) — delegation contract, model/effort routing, retrieval order, brevity
 - [Example Feedback Rule](example-feedback-rule.md) — placeholder: replace with a behavioral correction you've given Claude
 
 ## Reference

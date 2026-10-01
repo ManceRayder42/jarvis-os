@@ -3,6 +3,41 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0]
+
+### Changed
+
+- The setup page is rebuilt around one idea: a numbered checklist on the left,
+  the open step on the right, and one obvious action per step. It opens on the
+  first step that still needs you, shows progress across the essential steps,
+  and every step says in one line what it is for. The hold-to-start emblem,
+  the HUD dock and the inlined video backdrop are gone (the page dropped from
+  ~347 KB to ~46 KB).
+- Background is the moving knowledge graph from the ChatGP project: drifting
+  sky-blue dots joined by faint lines, one static frame under reduced motion,
+  paused while the tab is hidden.
+- Catalog links point at `master`, the repo's real default branch.
+
+### Added
+
+- **Tools step** (`setup/tools-catalog.json`): eleven programs and
+  connections — Context7, Playwright, GitHub CLI, git, qmd, defuddle,
+  NotebookLM, ffmpeg, Obsidian, Supabase, Vercel — each detected live and
+  installable or connectable with one press. MCP servers are added at user
+  scope with `claude mcp add`; a key, when one is needed, is never logged or
+  echoed back. "Create my memory" also connects the free, keyless defaults.
+- **Profiles** (`setup/profile.json`): title, step order and closing text come
+  from a profile, so a team edition is a different profile plus a few catalog
+  entries, not a fork of the page. A `workspace` step renders team tools
+  (shared MCP, private repos) when a profile asks for it.
+- **Working rules** (`memory-template/working-rules.md`), loaded into every
+  session: deliverable contract with a mandatory "what I did not check",
+  reviewer rubrics, split by provable unit, model/effort routing,
+  propose-only first week for new automations, retrieval order. Seeded into
+  existing hubs on the next setup run without touching anything already there.
+- Skills: `council` (default on), `knowledge-pack`, `preflight`, and the
+  optional `release-watch`.
+
 ## [0.2.5]
 
 ### Changed

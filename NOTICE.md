@@ -29,4 +29,12 @@ reasons, not quality ones.
   AGPL-3.0. AGPL is copyleft: bundling it would pull this entire plugin under
   AGPL, so it stays a separate install.
 
+## Original to this project
+
+**council**, **knowledge-pack**, **preflight**, **release-watch** and the
+`working-rules.md` memory template are original work of this project, MIT.
+`council` is an independent implementation of a publicly described method
+(independent advisors, anonymous peer review, a chair's verdict); it contains no
+text from the third-party skill listed above.
+
 Nothing here phones home, and this plugin collects no telemetry.

@@ -1,0 +1,141 @@
+{
+  "_comment": "The Tools (connections) step of /jarvis-setup. One entry per external tool or MCP server the page can install or connect. This file is an ALLOWLIST: setup/server.mjs never takes a package name, URL or command from the browser, only an id that must exist here. kind: cli = a binary on PATH, app = a desktop app (also detected by app bundle), mcp = an MCP server added with `claude mcp add -s user`, repo = a git repo cloned with `gh repo clone`. detect: {command} / {app} / {mcp} / {dir}. install (cli/app only): any subset of brew (args after `brew`), winget (package id), npm (args after `npm install`), pip (package), url (manual download page). Installs never run apt/dnf/sudo; those become a copyable line. mcp: {transport:http,url,header_secret} or {transport:stdio,command[]}. secret: only when header_secret is true. Every URL here is a vendor's own endpoint or download page.",
+  "tools": [
+    {
+      "id": "context7",
+      "name": "Context7",
+      "why": "Live, up-to-date documentation for any library, so answers are not based on stale memory.",
+      "kind": "mcp",
+      "category": "research",
+      "default": true,
+      "detect": { "mcp": "context7" },
+      "mcp": { "transport": "http", "url": "https://mcp.context7.com/mcp", "header_secret": false },
+      "secret": null,
+      "docs": "https://context7.com"
+    },
+    {
+      "id": "playwright",
+      "name": "Playwright browser",
+      "why": "Lets Claude drive a real browser: open pages, click, fill forms, take screenshots.",
+      "kind": "mcp",
+      "category": "research",
+      "default": true,
+      "detect": { "mcp": "playwright" },
+      "mcp": { "transport": "stdio", "command": ["npx", "@playwright/mcp@latest"] },
+      "secret": null,
+      "docs": "https://github.com/microsoft/playwright-mcp"
+    },
+    {
+      "id": "github",
+      "name": "GitHub CLI",
+      "why": "Work with GitHub from Claude: clone repos, open pull requests, read issues.",
+      "kind": "cli",
+      "category": "core",
+      "default": true,
+      "detect": { "command": "gh" },
+      "install": { "brew": ["install", "gh"], "winget": "GitHub.cli", "url": "https://cli.github.com" },
+      "secret": null,
+      "after": "Sign in once: gh auth login",
+      "docs": "https://cli.github.com"
+    },
+    {
+      "id": "git",
+      "name": "git",
+      "why": "Keeps a history of your memory folder, so nothing you save is ever lost.",
+      "kind": "cli",
+      "category": "core",
+      "default": true,
+      "detect": { "command": "git" },
+      "install": { "brew": ["install", "git"], "winget": "Git.Git", "url": "https://git-scm.com/downloads" },
+      "secret": null,
+      "docs": "https://git-scm.com"
+    },
+    {
+      "id": "qmd",
+      "name": "qmd search",
+      "why": "Search everything you have written, by meaning and by keyword, on your own machine.",
+      "kind": "cli",
+      "category": "notes",
+      "default": true,
+      "detect": { "command": "qmd" },
+      "install": { "npm": ["install", "-g", "@tobilu/qmd"], "url": "https://github.com/tobi/qmd" },
+      "secret": null,
+      "docs": "https://github.com/tobi/qmd"
+    },
+    {
+      "id": "defuddle",
+      "name": "Defuddle",
+      "why": "Turns a web page into clean readable text, so Claude reads the article and not the clutter.",
+      "kind": "cli",
+      "category": "research",
+      "default": true,
+      "detect": { "command": "defuddle" },
+      "install": { "npm": ["install", "-g", "defuddle"], "url": "https://github.com/kepano/defuddle" },
+      "secret": null,
+      "docs": "https://github.com/kepano/defuddle"
+    },
+    {
+      "id": "notebooklm",
+      "name": "NotebookLM",
+      "why": "Deep research with cited answers across the sources you give it.",
+      "kind": "cli",
+      "category": "research",
+      "default": false,
+      "detect": { "command": "notebooklm" },
+      "install": { "pip": "notebooklm-py", "url": "https://pypi.org/project/notebooklm-py/" },
+      "secret": null,
+      "after": "Sign in once: notebooklm login",
+      "docs": "https://pypi.org/project/notebooklm-py/"
+    },
+    {
+      "id": "ffmpeg",
+      "name": "ffmpeg",
+      "why": "Processes video and audio: convert, trim, extract sound, transcribe voice notes.",
+      "kind": "cli",
+      "category": "build",
+      "default": false,
+      "detect": { "command": "ffmpeg" },
+      "install": { "brew": ["install", "ffmpeg"], "winget": "Gyan.FFmpeg", "url": "https://ffmpeg.org/download.html" },
+      "secret": null,
+      "docs": "https://ffmpeg.org"
+    },
+    {
+      "id": "obsidian",
+      "name": "Obsidian",
+      "why": "Read your memory folder as linked notes, with search and a graph view.",
+      "kind": "app",
+      "category": "notes",
+      "default": false,
+      "detect": { "app": "Obsidian" },
+      "install": { "brew": ["install", "--cask", "obsidian"], "winget": "Obsidian.Obsidian", "url": "https://obsidian.md/download" },
+      "secret": null,
+      "docs": "https://obsidian.md"
+    },
+    {
+      "id": "supabase",
+      "name": "Supabase",
+      "why": "Let Claude look at and work with your databases.",
+      "kind": "mcp",
+      "category": "build",
+      "default": false,
+      "detect": { "mcp": "supabase" },
+      "mcp": { "transport": "http", "url": "https://mcp.supabase.com/mcp", "header_secret": false },
+      "secret": null,
+      "after": "Sign in the first time you use it: type /mcp in Claude Code",
+      "docs": "https://supabase.com/docs/guides/getting-started/mcp"
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "why": "Deploy websites and apps straight from Claude.",
+      "kind": "cli",
+      "category": "build",
+      "default": false,
+      "detect": { "command": "vercel" },
+      "install": { "npm": ["install", "-g", "vercel"], "url": "https://vercel.com/docs/cli" },
+      "secret": null,
+      "after": "Sign in once: vercel login",
+      "docs": "https://vercel.com/docs/cli"
+    }
+  ]
+}

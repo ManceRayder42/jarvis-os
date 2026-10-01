@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn, execFile, execFileSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,7 +31,55 @@ const HARD_CAP_MS = 10 * 60 * 1000; // exit after this, no matter what
 const PLUGIN_ROOT = path.join(__dirname, '..');
 const MEMORY_TEMPLATE_DIR = path.join(PLUGIN_ROOT, 'memory-template');
 
-const DEFAULT_HUB = path.join(os.homedir(), 'jarvis-hub');
+// The edition profile: everything the page renders that differs between the
+// generic Jarvis OS and a team edition (name, subtitle, which steps to show,
+// accent color, finish-screen copy, default memory folder). Served to the page
+// inside GET /api/state. A missing or malformed profile.json must never stop
+// setup from starting -- every field falls back to the generic defaults, and a
+// field of the wrong type is ignored individually rather than rejecting the file.
+const PROFILE_DEFAULTS = {
+  edition: 'jarvis',
+  product: 'Jarvis OS',
+  title: 'Set up Jarvis',
+  subtitle: 'Memory that follows you into every Claude Code session.',
+  hub_default: '~/jarvis-hub',
+  accent: '#7dd3fc',
+  steps: ['machine', 'memory', 'skills', 'tools', 'phone', 'finish'],
+  finish: {
+    headline: "You're set.",
+    lines: [
+      'Open Claude Code in any folder — it already knows you.',
+      'Say "done" when you finish working, so it remembers.',
+    ],
+  },
+};
+
+function loadProfile() {
+  let parsed = {};
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, 'profile.json'), 'utf8'));
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) parsed = raw;
+  } catch { /* missing or unparseable -> pure defaults */ }
+
+  const profile = { ...PROFILE_DEFAULTS, finish: { ...PROFILE_DEFAULTS.finish } };
+  for (const key of ['edition', 'product', 'title', 'subtitle', 'hub_default', 'accent']) {
+    if (typeof parsed[key] === 'string' && parsed[key].trim()) profile[key] = parsed[key];
+  }
+  if (Array.isArray(parsed.steps) && parsed.steps.length && parsed.steps.every((s) => typeof s === 'string' && s)) {
+    profile.steps = parsed.steps;
+  }
+  if (parsed.finish && typeof parsed.finish === 'object') {
+    if (typeof parsed.finish.headline === 'string') profile.finish.headline = parsed.finish.headline;
+    if (Array.isArray(parsed.finish.lines) && parsed.finish.lines.every((l) => typeof l === 'string')) {
+      profile.finish.lines = parsed.finish.lines;
+    }
+  }
+  return profile;
+}
+
+const PROFILE = loadProfile();
+
+const DEFAULT_HUB = expandHome(PROFILE.hub_default);
 const DEFAULT_CONFIG = () => ({
   hub: DEFAULT_HUB,
   obsidian_vault: null,
@@ -66,6 +114,19 @@ const SKILLS_CATALOG = JSON.parse(fs.readFileSync(path.join(__dirname, 'skills-c
 // Purely derived: a key is accepted only because some skill in the catalog says
 // it needs one. Adding a skill with a new provider therefore needs no code
 // change here, and a key with no skill behind it can never be collected.
+// The Tools (connections) catalog -- an allowlist of external tools the page can
+// install or connect. Same safety model as the skills catalog: the browser sends
+// an id, never a package name, URL or command. A missing/unparseable file means
+// an empty Tools step, not a server that fails to start.
+const TOOLS_CATALOG = (() => {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(path.join(__dirname, 'tools-catalog.json'), 'utf8'));
+    return Array.isArray(parsed.tools) ? parsed.tools : [];
+  } catch {
+    return [];
+  }
+})();
+
 const ALLOWED_SECRETS = new Set(SKILLS_CATALOG.flatMap((s) => s.requires || []));
 
 const TOKEN = crypto.randomBytes(24).toString('hex');
@@ -129,7 +190,19 @@ function writeHubPointer(hub) {
 function seedHub(hub) {
   const memoryPath = path.join(hub, 'MEMORY.md');
   if (fs.existsSync(memoryPath)) {
-    return { seeded: false, reason: 'already-populated' };
+    // An existing hub is never re-seeded, with one exception: files that were
+    // added to the template after it was created and are not index-bound
+    // (working-rules.md arrived in v0.3.0). Copy those only if absent.
+    const LATE_ADDITIONS = ['working-rules.md'];
+    const added = [];
+    for (const f of LATE_ADDITIONS) {
+      const src = path.join(MEMORY_TEMPLATE_DIR, f);
+      const dest = path.join(hub, f);
+      try {
+        if (fs.existsSync(src) && !fs.existsSync(dest)) { fs.copyFileSync(src, dest); added.push(f); }
+      } catch { /* best effort -- an unwritable file must not fail setup */ }
+    }
+    return { seeded: false, reason: 'already-populated', added };
   }
   try {
     fs.mkdirSync(hub, { recursive: true });
@@ -210,7 +283,10 @@ function serveIndex(res) {
 }
 
 function serveState(res) {
-  sendJSON(res, 200, config);
+  // hub_exists lets the page tell "memory chosen" apart from "memory created":
+  // a fresh machine has a default hub path in config before anything is on disk.
+  const hubExists = Boolean(config.hub && fs.existsSync(path.join(config.hub, 'MEMORY.md')));
+  sendJSON(res, 200, { ...config, profile: PROFILE, hub_exists: hubExists });
 }
 
 async function handleConfig(req, res) {
@@ -879,6 +955,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/skills') return await handleSkillsSet(req, res);
     if (req.method === 'POST' && url.pathname === '/api/setup-all') return await handleSetupAll(req, res);
     if (req.method === 'POST' && url.pathname === '/api/install-tool') return await handleInstallTool(req, res);
+    if (req.method === 'GET' && url.pathname === '/api/tools') return handleToolsList(req, res);
+    if (req.method === 'POST' && url.pathname === '/api/tools/install') return await handleToolsInstall(req, res);
+    if (req.method === 'POST' && url.pathname === '/api/tools/connect') return await handleToolsConnect(req, res);
     if (req.method === 'POST' && url.pathname === '/api/telegram-token') return await handleTelegramToken(req, res);
   } catch {
     return sendJSON(res, 500, { ok: false, error: 'internal error' });
@@ -975,6 +1054,39 @@ async function handleSetupAll(req, res) {
     detail: { enabled, failed },
   });
 
+  // Connections. Only MCP servers that are on by default AND need no secret are
+  // connected here -- those are the ones that cost the user nothing and ask for
+  // nothing. CLIs are never installed from setup-all: an install changes the
+  // machine, so it stays an explicit click on the Tools step. One tool failing
+  // never stops the next; the step is ok=false only to LIST the failures.
+  {
+    const connected = [];
+    const already = [];
+    const failedTools = [];
+    let skipped = null;
+    const candidates = TOOLS_CATALOG.filter(
+      (t) => t.kind === 'mcp' && t.default && !(t.secret || (t.mcp && t.mcp.header_secret)),
+    );
+    if (candidates.length && !hasCommand('claude')) {
+      skipped = 'claude CLI not found';
+    } else {
+      const present = readMcpState();
+      for (const t of candidates) {
+        if (isMcpPresent(t, present)) { already.push(t.id); continue; }
+        try {
+          const r = await connectMcp(t, null);
+          (r.ok ? connected : failedTools).push(t.id);
+        } catch { failedTools.push(t.id); }
+      }
+    }
+    steps.push({
+      id: 'tools',
+      label: 'Connecting the basics',
+      ok: failedTools.length === 0,
+      detail: { connected, already, failed: failedTools, skipped },
+    });
+  }
+
   step('checkup', 'Checking your Mac', () => {
     PREFLIGHT = runPreflight();
     const blocking = PREFLIGHT.filter((c) => c.required && !c.ok);
@@ -1023,6 +1135,309 @@ async function handleInstallTool(req, res) {
   const r = runCommand(cmd, args);
   PREFLIGHT = runPreflight();
   sendJSON(res, 200, { ok: r.ok, tool, via: cmd, detail: (r.output || r.error || '').slice(-2000) });
+}
+
+// ---------------------------------------------------------------------------
+// Tools (connections). Driven entirely by setup/tools-catalog.json.
+//
+// Safety model, same as the rest of this file: the catalog is the allowlist.
+// The browser sends an `id` (and, for a connector that needs one, a secret) --
+// never a package name, URL, command or path. Every process below is started
+// with execFile and an argument array, so there is no shell to inject into.
+// Nothing here ever runs sudo, apt or dnf; where those would be needed the
+// caller gets a copyable line instead.
+// ---------------------------------------------------------------------------
+
+// Async runner for the slow things (brew/npm/pip/gh/claude). The old
+// runCommand blocks the event loop, which is fine for a 20ms `--version` but
+// not for a 60-second `brew install`: a blocked loop cannot answer the page's
+// heartbeat, and the idle checker would then conclude the tab was closed and
+// shut the server down mid-install. So: async, plus a keep-alive that counts
+// "a command is running" as activity.
+//
+// `scrub` is a list of strings (a secret) removed from every piece of output
+// and from the error text -- execFile's own error message contains the whole
+// command line, which would include a Bearer token.
+function runAsync(cmd, args, { timeout = 300_000, scrub = [] } = {}) {
+  return new Promise((resolve) => {
+    const keepAlive = setInterval(() => { lastHeartbeat = Date.now(); }, 3_000);
+    const clean = (text) => {
+      let out = String(text || '');
+      for (const s of scrub) if (s) out = out.split(s).join('[hidden]');
+      return out.replace(/(Bearer\s+)\S+/gi, '$1[hidden]');
+    };
+    // On Windows npm is npm.cmd, which cannot be spawned without a shell. Args
+    // for that case come only from the catalog, never from the caller.
+    const useShell = IS_WIN && (cmd === 'npm' || cmd === 'npx');
+    try {
+      execFile(cmd, args, { encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024, shell: useShell, stdio: ['ignore', 'pipe', 'pipe'] }, (err, stdout, stderr) => {
+        clearInterval(keepAlive);
+        const output = clean(((stdout || '') + '\n' + (stderr || '')).trim());
+        if (err) resolve({ ok: false, output, error: clean(err.killed ? 'timed out' : err.message) });
+        else resolve({ ok: true, output });
+      });
+    } catch (e) {
+      clearInterval(keepAlive);
+      resolve({ ok: false, output: '', error: clean(e.message) });
+    }
+  });
+}
+
+function tail(text, n = 500) {
+  const t = String(text || '').trim();
+  return t.length > n ? t.slice(-n) : t;
+}
+
+// What Claude Code has registered, read straight from the config files rather
+// than by shelling out to `claude mcp list`, which health-checks every
+// configured server and can take many seconds. User-scope servers live under
+// the top-level `mcpServers` key of ~/.claude.json. A server that arrives via an
+// installed plugin is not in that file; it shows up as an `<id>@<marketplace>`
+// key in ~/.claude/settings.json `enabledPlugins`. The plugin match is best
+// effort. Missing or unparseable files simply mean "nothing registered".
+function readMcpState() {
+  const servers = new Set();
+  const plugins = [];
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude.json'), 'utf8'));
+    if (cfg && cfg.mcpServers && typeof cfg.mcpServers === 'object') {
+      for (const name of Object.keys(cfg.mcpServers)) servers.add(name);
+    }
+  } catch { /* not connected to anything yet */ }
+  try {
+    const settings = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude', 'settings.json'), 'utf8'));
+    if (settings && settings.enabledPlugins && typeof settings.enabledPlugins === 'object') {
+      for (const [key, on] of Object.entries(settings.enabledPlugins)) if (on) plugins.push(key.toLowerCase());
+    }
+  } catch { /* no settings file */ }
+  return { servers, plugins };
+}
+
+function isMcpPresent(tool, state) {
+  const name = (tool.detect && tool.detect.mcp) || tool.id;
+  if (state.servers.has(name)) return true;
+  return state.plugins.some((p) => p.split('@')[0] === name.toLowerCase());
+}
+
+// Is this desktop app installed? Bundle on a Mac, the existing Obsidian probe
+// for Obsidian elsewhere, and a plain PATH lookup as a last resort.
+function detectApp(appName, id) {
+  if (IS_MAC) {
+    const bundles = [`/Applications/${appName}.app`, path.join(os.homedir(), 'Applications', `${appName}.app`)];
+    if (bundles.some((p) => fs.existsSync(p))) return true;
+  }
+  if (id === 'obsidian' && detectObsidian().app_path) return true;
+  return hasCommand(appName.toLowerCase());
+}
+
+// The command this machine would use to install a cli/app tool, or null.
+// Order: Homebrew on a Mac, winget on Windows, then npm, then pip (pipx
+// preferred so it does not touch the system Python). apt/dnf are never run.
+function pickInstaller(tool) {
+  const inst = tool.install || {};
+  if (IS_MAC && inst.brew && hasCommand('brew')) return { cmd: 'brew', args: inst.brew, via: 'brew' };
+  if (IS_WIN && inst.winget && hasCommand('winget')) {
+    return { cmd: 'winget', args: ['install', '--silent', '--accept-package-agreements', '--accept-source-agreements', '--id', inst.winget], via: 'winget' };
+  }
+  if (inst.npm && hasCommand('npm')) return { cmd: 'npm', args: inst.npm, via: 'npm' };
+  if (inst.pip) {
+    if (hasCommand('pipx')) return { cmd: 'pipx', args: ['install', inst.pip], via: 'pipx' };
+    const py = IS_WIN ? 'python' : 'python3';
+    if (hasCommand(py)) return { cmd: py, args: ['-m', 'pip', 'install', '--user', inst.pip], via: 'pip' };
+  }
+  return null;
+}
+
+// The copyable line for a tool we cannot install ourselves.
+function manualFor(tool) {
+  const inst = tool.install || {};
+  if (PACKAGES[tool.id] && !(inst.npm || inst.pip)) return manualInstall(tool.id);
+  if (IS_MAC && inst.brew) return 'brew ' + inst.brew.join(' ');
+  if (IS_WIN && inst.winget) return 'winget install ' + inst.winget;
+  if (inst.npm) return 'npm ' + inst.npm.join(' ');
+  if (inst.pip) return 'pipx install ' + inst.pip + '   (or: python3 -m pip install --user ' + inst.pip + ')';
+  if (PACKAGES[tool.id]) return manualInstall(tool.id);
+  return inst.url ? 'see ' + inst.url : null;
+}
+
+// One row for the page. `state`: ready | missing | not-connected | no-installer.
+function toolStatus(tool, mcpState) {
+  const row = { ...tool, installed: false, connected: null, state: 'missing', detail: '', can_install: false, can_connect: false, manual: null };
+  const det = tool.detect || {};
+
+  if (tool.kind === 'mcp') {
+    const claudeOk = hasCommand('claude');
+    const present = isMcpPresent(tool, mcpState || readMcpState());
+    row.installed = present;
+    row.connected = present;
+    row.can_connect = claudeOk;
+    if (present) { row.state = 'ready'; row.detail = 'Connected'; }
+    else {
+      row.state = 'not-connected';
+      row.detail = claudeOk ? 'Not connected yet' : 'Claude Code CLI not found';
+      if (tool.mcp && tool.mcp.header_secret) row.detail += ' — needs a key';
+    }
+    return row;
+  }
+
+  if (tool.kind === 'repo') {
+    const dir = det.dir ? expandHome(det.dir) : null;
+    row.installed = Boolean(dir && fs.existsSync(dir));
+    if (row.installed) { row.state = 'ready'; row.detail = dir; return row; }
+    row.can_install = hasCommand('gh');
+    row.state = row.can_install ? 'missing' : 'no-installer';
+    row.detail = row.can_install ? 'Not downloaded yet' : 'Needs the GitHub CLI first';
+    if (!row.can_install) row.manual = manualFor(TOOLS_CATALOG.find((t) => t.id === 'github') || {}) ;
+    return row;
+  }
+
+  // cli / app
+  row.installed = det.app ? detectApp(det.app, tool.id) : det.command ? hasCommand(det.command) : false;
+  if (row.installed) { row.state = 'ready'; row.detail = 'Installed'; return row; }
+  const installer = pickInstaller(tool);
+  row.can_install = Boolean(installer);
+  row.state = installer ? 'missing' : 'no-installer';
+  row.manual = manualFor(tool);
+  row.detail = installer ? 'Not installed' : 'Needs a manual install';
+  return row;
+}
+
+function handleToolsList(req, res) {
+  const mcpState = readMcpState();
+  sendJSON(res, 200, { tools: TOOLS_CATALOG.map((t) => toolStatus(t, mcpState)) });
+}
+
+async function readJSONBody(req, res) {
+  try {
+    const raw = await readBody(req);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    sendJSON(res, 400, { ok: false, error: 'invalid JSON' });
+    return null;
+  }
+}
+
+// POST /api/tools/install { id } -- install a cli/app tool, or clone a repo.
+async function handleToolsInstall(req, res) {
+  const body = await readJSONBody(req, res);
+  if (body === null) return;
+  const tool = TOOLS_CATALOG.find((t) => t.id === String(body.id || ''));
+  if (!tool) return sendJSON(res, 400, { ok: false, error: 'unknown tool: ' + String(body.id || '') });
+  if (tool.kind === 'mcp') return sendJSON(res, 400, { ok: false, error: 'this one is connected, not installed' });
+
+  const fresh = (extra) => {
+    PREFLIGHT = runPreflight();
+    return { tool: toolStatus(tool), ...extra };
+  };
+
+  if (tool.kind === 'repo') {
+    const clone = tool.clone || {};
+    const dest = clone.dest ? expandHome(clone.dest) : null;
+    if (!clone.repo || !dest) return sendJSON(res, 400, { ok: false, error: 'tool has no clone target' });
+    if (fs.existsSync(dest)) return sendJSON(res, 200, { ok: true, ...fresh({ detail: 'Already downloaded' }) });
+    if (!hasCommand('gh')) {
+      return sendJSON(res, 200, { ok: false, error: 'GitHub CLI not installed — install it first, then run gh auth login', manual: manualFor(TOOLS_CATALOG.find((t) => t.id === 'github') || {}), ...fresh({}) });
+    }
+    const authed = await runAsync('gh', ['auth', 'status'], { timeout: 30_000 });
+    if (!authed.ok) {
+      return sendJSON(res, 200, { ok: false, error: 'GitHub CLI not signed in — run gh auth login', manual: 'gh auth login', ...fresh({}) });
+    }
+    try { fs.mkdirSync(path.dirname(dest), { recursive: true }); } catch (e) {
+      return sendJSON(res, 200, { ok: false, error: 'could not create the folder: ' + e.message, ...fresh({}) });
+    }
+    const r = await runAsync('gh', ['repo', 'clone', clone.repo, dest]);
+    if (!r.ok) {
+      const text = (r.output || '') + ' ' + (r.error || '');
+      const noAccess = /404|not found|could not resolve|permission|403|denied/i.test(text);
+      return sendJSON(res, 200, {
+        ok: false,
+        error: noAccess ? 'No access yet — ask the repo owner to add your GitHub user' : 'download failed',
+        detail: tail(r.output || r.error),
+        ...fresh({}),
+      });
+    }
+    return sendJSON(res, 200, { ok: true, ...fresh({ detail: 'Downloaded to ' + dest }) });
+  }
+
+  // cli / app
+  const row = toolStatus(tool);
+  if (row.installed) return sendJSON(res, 200, { ok: true, tool: row, detail: 'Already installed' });
+  const installer = pickInstaller(tool);
+  if (!installer) {
+    return sendJSON(res, 200, { ok: false, error: 'no-installer', manual: manualFor(tool), url: (tool.install || {}).url || null, tool: row });
+  }
+  const r = await runAsync(installer.cmd, installer.args);
+  const after = fresh({ via: installer.via, detail: r.ok ? (tool.after || 'Installed') : tail(r.output || r.error, 1500) });
+  // npm/pip can succeed yet leave the binary off this process's PATH; report
+  // that honestly instead of claiming a ready tool.
+  const ok = r.ok && after.tool.installed;
+  const out = { ok, ...after };
+  if (r.ok && !ok) out.detail = 'Installed, but it is not on your PATH yet — open a new terminal and it should appear.';
+  if (!r.ok) out.error = 'install failed';
+  sendJSON(res, 200, out);
+}
+
+// Shared by POST /api/tools/connect and setup-all. Returns {ok, detail|error}.
+// `secret` is already validated by the caller and is scrubbed from everything
+// this returns, which in turn is all the page or a log could ever see.
+async function connectMcp(tool, secret) {
+  const m = tool.mcp || {};
+  const scrub = secret ? [secret] : [];
+
+  // Reconnecting with a new key must replace the old registration, so remove it
+  // first. Failure here is fine (it may simply not exist, or be plugin-provided).
+  if (readMcpState().servers.has(tool.id)) {
+    await runAsync('claude', ['mcp', 'remove', '-s', 'user', tool.id], { timeout: 60_000, scrub });
+  }
+
+  let args;
+  if (m.transport === 'http') {
+    args = ['mcp', 'add', '--transport', 'http', '-s', 'user', tool.id, m.url];
+    // -H is variadic in the claude CLI, so it goes last.
+    if (m.header_secret) args.push('-H', 'Authorization: Bearer ' + secret);
+  } else if (m.transport === 'stdio' && Array.isArray(m.command) && m.command.length) {
+    args = ['mcp', 'add', '-s', 'user', tool.id, '--', ...m.command];
+  } else {
+    return { ok: false, error: 'catalog entry has no usable connector' };
+  }
+
+  const r = await runAsync('claude', args, { timeout: 120_000, scrub });
+  if (!r.ok) return { ok: false, error: 'could not connect', detail: tail(r.output || r.error) };
+  // Fixed text on success: the CLI's own output can echo the header it was given.
+  return { ok: true, detail: tool.after || 'Connected' };
+}
+
+// POST /api/tools/connect { id, secret? } -- register an MCP server with Claude
+// Code at user scope.
+async function handleToolsConnect(req, res) {
+  const body = await readJSONBody(req, res);
+  if (body === null) return;
+  const tool = TOOLS_CATALOG.find((t) => t.id === String(body.id || ''));
+  if (!tool) return sendJSON(res, 400, { ok: false, error: 'unknown tool: ' + String(body.id || '') });
+  if (tool.kind !== 'mcp') return sendJSON(res, 400, { ok: false, error: 'this one is installed, not connected' });
+
+  const needsSecret = Boolean(tool.mcp && tool.mcp.header_secret);
+  let secret = null;
+  if (needsSecret) {
+    secret = typeof body.secret === 'string' ? body.secret.trim() : '';
+    // 8-512 chars, no whitespace of any kind (a newline in a header value is an
+    // injection, and a pasted key with a stray space is just a mistake).
+    if (!/^\S{8,512}$/.test(secret)) {
+      return sendJSON(res, 400, { ok: false, error: 'that does not look like a valid key (8-512 characters, no spaces)' });
+    }
+  }
+  if (!hasCommand('claude')) {
+    return sendJSON(res, 200, { ok: false, error: 'Claude Code CLI not found', tool: toolStatus(tool) });
+  }
+  // Nothing to change for a keyless connector that is already there.
+  if (!needsSecret && isMcpPresent(tool, readMcpState())) {
+    return sendJSON(res, 200, { ok: true, tool: toolStatus(tool), detail: 'Already connected' });
+  }
+
+  const r = await connectMcp(tool, secret);
+  const out = { ok: r.ok, tool: toolStatus(tool), detail: r.detail || r.error };
+  if (!r.ok) { out.error = r.error; out.detail = r.detail || ''; }
+  sendJSON(res, 200, out);
 }
 
 // POST /api/telegram-token { value } -- writes the bot token where the official

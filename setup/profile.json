@@ -1,0 +1,16 @@
+{
+  "edition": "jarvis",
+  "product": "Jarvis OS",
+  "title": "Set up Jarvis",
+  "subtitle": "Memory that follows you into every Claude Code session.",
+  "hub_default": "~/jarvis-hub",
+  "accent": "#7dd3fc",
+  "steps": ["machine", "memory", "skills", "tools", "phone", "finish"],
+  "finish": {
+    "headline": "You're set.",
+    "lines": [
+      "Open Claude Code in any folder — it already knows you.",
+      "Say \"done\" when you finish working, so it remembers."
+    ]
+  }
+}

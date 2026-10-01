@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
-  <img alt="16 skills" src="https://img.shields.io/badge/skills-16-blue.svg">
+  <img alt="20 skills" src="https://img.shields.io/badge/skills-20-blue.svg">
   <img alt="API keys required: 0" src="https://img.shields.io/badge/API%20keys%20required-0-brightgreen.svg">
   <img alt="Telemetry: none" src="https://img.shields.io/badge/telemetry-none-lightgrey.svg">
   <a href="https://github.com/ManceRayder42/jarvis-os/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/ManceRayder42/jarvis-os?style=flat"></a>
@@ -37,15 +37,19 @@ tell it where to find this one and to install it — you only do this once.)
 /jarvis-setup
 ```
 
-**3. A page opens in your browser.** Pick where you'd like your memory kept
-(or just leave the default) and press the button. The page does everything
-else itself: it creates the memory folder, keeps a history of changes to it,
-turns on the default set of skills, and — if you have the note-taking app
-Obsidian installed — connects to it automatically. There is nothing else to
-set up.
+**3. A page opens in your browser.** It is a short numbered checklist —
+*Your computer → Memory → Skills → Tools → Phone & voice → Start using it* —
+and it opens on the first step that still needs you. Press **Create my
+memory** and the page does the rest: it creates the memory folder, keeps a
+history of changes to it, turns on the default skills, and connects the free
+tools (live library docs and a real browser). The **Tools** step lists eleven
+more programs and connections — GitHub, search over your notes, web-page
+cleanup, NotebookLM research, ffmpeg, Obsidian, Supabase, Vercel — each with
+one line on what it is for and an Install or Connect button. Skip any you
+don't need.
 
 <p align="center">
-  <img src="assets/setup.png" alt="The /jarvis-setup page: feature toggles, hub directory, and what each skill does" width="760">
+  <img src="assets/setup.png" alt="The /jarvis-setup page: a numbered checklist on the left, the open step on the right" width="760">
 </p>
 
 You're done. Everything from here on happens on its own.
@@ -156,8 +160,11 @@ a conversation saying it isn't configured yet, nothing more.
 | **`research-notebook`** | Multi-source research with citations, via NotebookLM |
 | **`memory-consolidation`** | Folds recent session logs into memory so patterns persist |
 | **`media-gen`** | Image/video generation via fal.ai — **off by default**, needs your own key |
+| **`council`** | Runs a real decision past five independent advisors, peer-reviewed anonymously, then a chair's verdict |
+| **`knowledge-pack`** | Builds a durable, sourced reference pack on a subject instead of re-researching it every time — **off by default** |
+| **`preflight`** | Pre-deploy sanity check: broken `.env` quoting, risky project paths, swallowed errors — **off by default** |
 
-The eleven above load by default. Six more ship **optional, off by
+Most of the above load by default. Seven more ship **optional, off by
 default** — see [Optional skills](#optional-skills) for what they are and why
 they're not part of the default set:
 
@@ -169,11 +176,23 @@ they're not part of the default set:
 | **`json-canvas`** | `.canvas` files — mind maps and flowcharts |
 | **`obsidian-cli`** | Command-line control of a running Obsidian vault |
 | **`voice`** | Turn a voice message into text, or a reply into speech, via ElevenLabs — **off by default**, needs your own key |
+| **`release-watch`** | Reads the Claude Code changelog for you and keeps only what changes something for your setup — silence is a normal result |
 
 Skills that run locally and need no account load by default. Anything that
 costs money, needs a large first-run download, or is only useful with
 software you may not have ships turned off. A free plugin shouldn't ask for a
 credit card — or a hundred-megabyte download — in the first five minutes.
+
+### Working rules
+
+New memory folders also get `working-rules.md`, loaded into every session
+next to your memory: how Claude should delegate (every worker reports **what
+it did not check**, every reviewer gets a rubric), which model to route
+mechanical lookups to, why a new automation runs propose-only for its first
+week, and the order to look things up in (your notes → exact search →
+semantic search → the web last). Edit it freely — it is yours. Existing
+memory folders get it the next time you run `/jarvis-setup`; nothing already
+there is overwritten.
 
 ### Optional skills
 
@@ -304,7 +323,9 @@ Left out for license reasons, not quality ones:
   advisors, peer-reviewed, then synthesized. By
   [Ole Lehmann](https://github.com/aiwithremy/claude-skills-llm-council),
   methodology credited to Andrej Karpathy. Its repo ships **no LICENSE file**,
-  so there's no grant to redistribute it.
+  so there's no grant to redistribute it. This plugin's own `council` skill is
+  an independent implementation of the same publicly described method, with
+  none of that skill's text.
 - **`nano-banana`** — image generation and editing, with a free tier. Licensed
   **AGPL-3.0**; bundling it would pull this entire plugin under that
   copyleft license.
@@ -326,6 +347,8 @@ Left out for license reasons, not quality ones:
 hooks/                startup script — injects hub MEMORY.md
 commands/             /jarvis-setup
 setup/                the temporary local setup page + its server
+  profile.json        title, steps and finish text the page renders (an edition = a different profile)
+  tools-catalog.json  the Tools step: what each tool is, how to detect, install or connect it
 skills/               the default-on shipped skills
 optional-skills/      skills switched into skills/ on demand — see "Optional skills"
 memory-template/      seed hub: MEMORY.md index + example memory files
