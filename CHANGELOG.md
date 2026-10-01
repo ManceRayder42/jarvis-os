@@ -16,8 +16,9 @@ All notable changes to this project are documented here. Format follows
 - `setup-for-me` skill (default on): say "set me up" and Claude does it,
   asking once for the batch of installs and handing back only the human steps.
 - `AGENTS.md`: the same contract for any agent.
-- Keys stay out of agents' hands: `connect` reads a key from the terminal with
-  echo off and refuses without one, so the person runs that single command.
+- Keys stay out of agents' hands: `connect` reads a key from a hidden prompt,
+  or from the clipboard with `--from-clipboard` (for Claude Code's `!`
+  prefix), never from an argument, and never prints it.
 - The "not set up yet" session note now suggests letting Claude do it.
 
 ### Fixed

@@ -20,8 +20,10 @@ Rules:
 - Each `plan` item has `who`: `agent` (run it), `ask` (installs software — get
   the user's yes first, one question for the batch), `person` (keys, sign-ins,
   apps — hand these to the user).
-- Never handle a secret. `connect` reads keys from the terminal with echo off;
-  the user runs that one command themselves (in Claude Code: `!` + command).
+- Never handle a secret. `connect` reads a key from a hidden prompt, or with
+  `--from-clipboard` from the clipboard; the user runs that one command
+  themselves (in Claude Code: `!` + command). Never run it or read the
+  clipboard yourself.
 - Report from the command output, not from what you expected.
 
 Data the commands read, if you need to look directly:

@@ -25,7 +25,7 @@
 // Exit code: 0 when the command did what it says, 1 when any part failed,
 // 2 on bad usage.
 
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,7 +33,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 const json = argv.includes('--json');
-const rest = argv.slice(1).filter((a) => a !== '--json');
+const fromClipboard = argv.includes('--from-clipboard');
+const rest = argv.slice(1).filter((a) => a !== '--json' && a !== '--from-clipboard');
 // Plan lines print an absolute command, so an agent (or a person) can run them
 // from any directory without knowing where the plugin is installed.
 const SELF = 'node "' + path.join(__dirname, 'agent.mjs') + '"';
@@ -43,7 +44,7 @@ const USAGE = `usage: node setup/agent.mjs <command>
   setup [--hub <path>]                    create the memory, history, default skills, free tools
   enable <id>... | disable <id>...        switch skills
   install <id>...                         install programs from the Tools list
-  connect <id>                            connect a connection (keys are typed by the person, never passed in)
+  connect <id> [--from-clipboard]         connect a connection (a key comes from a hidden prompt or the clipboard, never an argument)
   obsidian <vault-path>                   link the memory into an Obsidian vault`;
 
 if (!cmd || cmd === 'help' || cmd === '--help') { console.log(USAGE); process.exit(cmd ? 0 : 2); }
@@ -81,10 +82,22 @@ let beat;
 function keepAlive() { beat = setInterval(() => api('/api/heartbeat', {}).catch(() => {}), 3000); }
 
 // ---- secrets: typed by the person, never seen by the caller --------------
+// Two ways in, neither of which puts the key on a command line or in output:
+// a hidden prompt on a real terminal, or the clipboard (for places like
+// Claude Code's `!` prefix, which may not be a terminal). Never echoed.
+function readClipboard() {
+  const tries = process.platform === 'darwin' ? [['pbpaste', []]]
+    : process.platform === 'win32' ? [['powershell', ['-NoProfile', '-Command', 'Get-Clipboard']]]
+    : [['wl-paste', ['-n']], ['xclip', ['-selection', 'clipboard', '-o']], ['xsel', ['-b', '-o']]];
+  for (const [c, a] of tries) {
+    try { const v = execFileSync(c, a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); if (v) return v; } catch { /* next */ }
+  }
+  throw new Error('the clipboard is empty or unreadable — copy the key first');
+}
 function readHidden(prompt) {
   return new Promise((resolve, reject) => {
     if (!process.stdin.isTTY) {
-      reject(new Error('this needs a key typed by a person. Ask them to run this command themselves (in Claude Code: type ! followed by the command).'));
+      reject(new Error('this needs a key from a person. They copy the key, then run this same command with --from-clipboard (in Claude Code: type ! followed by the command).'));
       return;
     }
     process.stderr.write(prompt);
@@ -132,7 +145,7 @@ function buildPlan(s) {
       const keyed = Boolean(t.secret);
       steps.push({ step: t.category === 'workspace' ? 'workspace' : 'tools', id: t.id, recommended: !!t.default,
         who: keyed ? 'person' : 'agent', what: 'Connect ' + t.name,
-        how: keyed ? '! ' + SELF + ' connect ' + t.id + '   (the person types this in Claude Code; it asks for ' + t.secret.label + ' with typing hidden)'
+        how: keyed ? '! ' + SELF + ' connect ' + t.id + ' --from-clipboard   (the person copies ' + t.secret.label + ', then types this in Claude Code; the key is never shown)'
           : SELF + ' connect ' + t.id,
         then: !keyed && t.after ? t.after : undefined });
     } else if (t.can_install) {
@@ -217,7 +230,7 @@ const COMMANDS = {
     const t = tools.find((x) => x.id === id);
     if (!t) throw new Error('unknown tool: ' + id);
     let secret;
-    if (t.secret) secret = await readHidden((t.secret.label || 'Key') + ' (typing is hidden): ');
+    if (t.secret) secret = fromClipboard ? readClipboard() : await readHidden((t.secret.label || 'Key') + ' (typing is hidden): ');
     const r = await api('/api/tools/connect', { id, secret });
     line(r.ok, id, r.ok ? (r.detail || 'connected') : (r.error || 'failed'));
     return r.ok;

@@ -39,10 +39,13 @@ to `status`, `plan`, `skills` or `tools` for machine-readable output.
 
 - Never ask the user to paste a key, token or password into the chat, and
   never put one in a command line.
-- For a connection that needs a key, tell them to run it themselves inside
-  Claude Code by typing `!` and then the command, e.g.
-  `! node "<plugin root>/setup/agent.mjs" connect <id>` — it asks for the key
-  with typing hidden. Print the real plugin root path so they can copy it.
+- For a connection that needs a key, give them the plan's `how` line as is:
+  they copy the key, then type it in Claude Code —
+  `! node "<plugin root>/setup/agent.mjs" connect <id> --from-clipboard`.
+  The key is read from the clipboard and never printed. (In a normal
+  terminal, without the flag, it asks with typing hidden.)
+- Never run a `--from-clipboard` command yourself, and never read the
+  clipboard.
 - Sign-ins (`gh auth login`, `notebooklm login`, `/mcp` for OAuth
   connections) are the person's: give the exact command.
 
