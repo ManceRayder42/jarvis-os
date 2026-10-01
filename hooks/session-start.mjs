@@ -51,7 +51,7 @@ function resolveHub() {
 }
 
 function nudge() {
-  process.stdout.write('[jarvis-os] Not set up yet — run /jarvis-setup to point this plugin at a memory hub.\n');
+  process.stdout.write('[jarvis-os] Not set up yet. Offer to do it for the user (setup-for-me skill: node "$CLAUDE_PLUGIN_ROOT/setup/agent.mjs" plan), or they can run /jarvis-setup for the page.\n');
 }
 
 // Working rules live next to MEMORY.md. Optional: absent or unreadable means

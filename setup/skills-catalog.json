@@ -16,6 +16,20 @@
       "details": "Writes a session note, folds it into hub memory, and commits the hub -- run this at the end of every session."
     },
     {
+      "id": "setup-for-me",
+      "name": "Setup For Me",
+      "description": "Claude does the setup itself; you only do keys and sign-ins",
+      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/skills/setup-for-me/SKILL.md",
+      "license": "MIT",
+      "author": "jarvis-os project",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": true,
+      "category": "core",
+      "details": "Runs every step of the setup page from the terminal, asks once before installing software, and hands back only what needs a person."
+    },
+    {
       "id": "memory-consolidation",
       "name": "Memory Consolidation",
       "description": "Turns recent sessions into lasting memory",
@@ -256,7 +270,7 @@
       "id": "knowledge-pack",
       "name": "Knowledge Pack",
       "description": "Builds a lasting reference on one subject",
-      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/skills/knowledge-pack/SKILL.md",
+      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/optional-skills/knowledge-pack/SKILL.md",
       "license": "MIT",
       "author": "jarvis-os project",
       "requires": [],
@@ -270,7 +284,7 @@
       "id": "preflight",
       "name": "Preflight",
       "description": "Checks env files and paths before you deploy",
-      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/skills/preflight/SKILL.md",
+      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/optional-skills/preflight/SKILL.md",
       "license": "MIT",
       "author": "jarvis-os project",
       "requires": [],

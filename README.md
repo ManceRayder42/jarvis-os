@@ -54,6 +54,13 @@ don't need.
 
 You're done. Everything from here on happens on its own.
 
+**Rather not click?** Tell Claude **"set me up"**. The `setup-for-me` skill
+runs every step of that page from the terminal, asks once before installing
+any software, and hands you only what needs a person — a key, a sign-in.
+Keys are never typed into the chat: for those it gives you one command to run
+yourself, and the key is read with typing hidden. Other agents can do the
+same; see [AGENTS.md](AGENTS.md).
+
 ## What you actually get
 
 Claude Code normally starts every conversation from nothing — it doesn't
@@ -161,10 +168,11 @@ a conversation saying it isn't configured yet, nothing more.
 | **`memory-consolidation`** | Folds recent session logs into memory so patterns persist |
 | **`media-gen`** | Image/video generation via fal.ai — **off by default**, needs your own key |
 | **`council`** | Runs a real decision past five independent advisors, peer-reviewed anonymously, then a chair's verdict |
+| **`setup-for-me`** | Does the setup itself when you say "set me up" — you only do keys and sign-ins |
 | **`knowledge-pack`** | Builds a durable, sourced reference pack on a subject instead of re-researching it every time — **off by default** |
 | **`preflight`** | Pre-deploy sanity check: broken `.env` quoting, risky project paths, swallowed errors — **off by default** |
 
-Most of the above load by default. Seven more ship **optional, off by
+Most of the above load by default. More ship **optional, off by
 default** — see [Optional skills](#optional-skills) for what they are and why
 they're not part of the default set:
 
@@ -176,6 +184,7 @@ they're not part of the default set:
 | **`json-canvas`** | `.canvas` files — mind maps and flowcharts |
 | **`obsidian-cli`** | Command-line control of a running Obsidian vault |
 | **`voice`** | Turn a voice message into text, or a reply into speech, via ElevenLabs — **off by default**, needs your own key |
+| **`knowledge-pack`**, **`preflight`** | Listed above; also optional, so switching them off really unloads them |
 | **`release-watch`** | Reads the Claude Code changelog for you and keeps only what changes something for your setup — silence is a normal result |
 
 Skills that run locally and need no account load by default. Anything that
@@ -349,6 +358,7 @@ commands/             /jarvis-setup
 setup/                the temporary local setup page + its server
   profile.json        title, steps and finish text the page renders (an edition = a different profile)
   tools-catalog.json  the Tools step: what each tool is, how to detect, install or connect it
+  agent.mjs           the same setup, as commands an agent can run (see AGENTS.md)
 skills/               the default-on shipped skills
 optional-skills/      skills switched into skills/ on demand — see "Optional skills"
 memory-template/      seed hub: MEMORY.md index + example memory files

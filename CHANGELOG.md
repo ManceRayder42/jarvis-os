@@ -3,6 +3,28 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.1]
+
+### Added
+
+- **Agents can do the setup.** `setup/agent.mjs` runs every step of the setup
+  page from the terminal (`plan`, `setup`, `enable`, `install`, `connect`,
+  `status`, `--json` everywhere) by driving the same local server the page
+  uses, so both paths behave identically. `plan` marks each remaining step
+  `agent`, `ask` (installs software — get a yes first) or `person` (keys,
+  sign-ins), with an absolute command for each.
+- `setup-for-me` skill (default on): say "set me up" and Claude does it,
+  asking once for the batch of installs and handing back only the human steps.
+- `AGENTS.md`: the same contract for any agent.
+- Keys stay out of agents' hands: `connect` reads a key from the terminal with
+  echo off and refuses without one, so the person runs that single command.
+- The "not set up yet" session note now suggests letting Claude do it.
+
+### Fixed
+
+- `knowledge-pack` and `preflight` lived in `skills/`, which Claude Code always
+  loads, so switching them off did nothing. They are in `optional-skills/` now.
+
 ## [0.3.0]
 
 ### Changed

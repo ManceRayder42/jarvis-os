@@ -7,6 +7,10 @@ allowed-tools:
 
 Launch the Jarvis setup server and hand the user its URL.
 
+If the user would rather not click through a page ("just do it", "set it up
+for me"), use the `setup-for-me` skill instead: it runs the same steps from
+the terminal via `setup/agent.mjs`.
+
 ## Task
 
 1. Run:
