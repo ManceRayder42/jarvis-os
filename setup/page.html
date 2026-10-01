@@ -346,6 +346,7 @@ function paintChrome() {
   const p = state.profile;
   document.title = p.title || 'Setup';
   $('#brand').textContent = p.product || 'Jarvis OS';
+  $('.mark').textContent = (p.product || 'J').trim().charAt(0).toUpperCase();
   $('#title').textContent = p.title;
   $('#subtitle').textContent = p.subtitle;
 

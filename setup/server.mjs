@@ -1425,6 +1425,31 @@ async function connectMcp(tool, secret) {
 
 // POST /api/tools/connect { id, secret? } -- register an MCP server with Claude
 // Code at user scope.
+// Sends one MCP `initialize` with the key. Returns 'accepted', 'rejected'
+// (401/403 only) or 'unknown' (network error, timeout, anything else). The key
+// travels only in the Authorization header to the catalog's own URL.
+async function probeHttpMcp(url, secret) {
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + secret,
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: 1, method: 'initialize',
+        params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'jarvis-setup', version: '1' } },
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.status === 401 || r.status === 403) return 'rejected';
+    return r.ok ? 'accepted' : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 async function handleToolsConnect(req, res) {
   const body = await readJSONBody(req, res);
   if (body === null) return;
@@ -1448,6 +1473,18 @@ async function handleToolsConnect(req, res) {
   // Nothing to change for a keyless connector that is already there.
   if (!needsSecret && isMcpPresent(tool, readMcpState())) {
     return sendJSON(res, 200, { ok: true, tool: toolStatus(tool), detail: 'Already connected' });
+  }
+
+  // A keyed HTTP server is asked once, with the key, before anything is
+  // saved: a wrong or revoked key fails here, on the page that can explain it,
+  // instead of surfacing later as a silent "needs authentication" in a session.
+  // Only an explicit 401/403 blocks; a network problem does not, so an offline
+  // setup can still register the server and be fixed later.
+  if (needsSecret && tool.mcp.transport === 'http') {
+    const verdict = await probeHttpMcp(tool.mcp.url, secret);
+    if (verdict === 'rejected') {
+      return sendJSON(res, 200, { ok: false, error: 'That key wasn’t accepted. Check you pasted the whole key, or ask for a new one.', tool: toolStatus(tool) });
+    }
   }
 
   const r = await connectMcp(tool, secret);
