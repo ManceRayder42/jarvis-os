@@ -73,6 +73,22 @@ function loadProfile() {
     if (Array.isArray(parsed.finish.lines) && parsed.finish.lines.every((l) => typeof l === 'string')) {
       profile.finish.lines = parsed.finish.lines;
     }
+    if (Array.isArray(parsed.finish.commands) && parsed.finish.commands.every((l) => typeof l === 'string')) {
+      profile.finish.commands = parsed.finish.commands;
+    }
+  }
+  // Display-only extras the page renders when present: per-step title
+  // overrides, and the team `workspace` step's copy. Strings only -- the page
+  // sets them as textContent, never as HTML.
+  const strMap = (o) => o && typeof o === 'object' && !Array.isArray(o)
+    && Object.values(o).every((v) => typeof v === 'string');
+  if (strMap(parsed.step_titles)) profile.step_titles = parsed.step_titles;
+  const w = parsed.workspace;
+  if (w && typeof w === 'object' && !Array.isArray(w)) {
+    const ws = {};
+    for (const k of ['title', 'lead', 'first_prompt']) if (typeof w[k] === 'string') ws[k] = w[k];
+    if (Array.isArray(w.intro) && w.intro.every((l) => typeof l === 'string')) ws.intro = w.intro;
+    profile.workspace = ws;
   }
   return profile;
 }
