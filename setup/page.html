@@ -65,6 +65,7 @@ button { font: inherit; color: inherit; }
 .top { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; }
 .mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
   background: linear-gradient(145deg, #7dd3fc, #38bdf8 60%, #0ea5e9); color: var(--accent-ink); font-weight: 700; font-size: 15px; }
+.mark img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
 .brand { font-weight: 600; letter-spacing: .01em; color: var(--ink-strong); }
 .top .spacer { flex: 1; }
 .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-muted);
@@ -342,11 +343,18 @@ function hubReady() {
 }
 function shortPath(p) { return String(p || '').replace(/^\/(Users|home)\/[^/]+/, '~'); }
 
+const JARVIS_LOGO = 'data:image/jpeg;base64,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';
+
 function paintChrome() {
   const p = state.profile;
   document.title = p.title || 'Setup';
   $('#brand').textContent = p.product || 'Jarvis OS';
-  $('.mark').textContent = (p.product || 'J').trim().charAt(0).toUpperCase();
+  const mark = $('.mark');
+  if ((p.product || 'Jarvis OS') === 'Jarvis OS') {
+    mark.replaceChildren(el('img', { src: JARVIS_LOGO, alt: '' }));
+  } else {
+    mark.textContent = p.product.trim().charAt(0).toUpperCase();
+  }
   $('#title').textContent = p.title;
   $('#subtitle').textContent = p.subtitle;
 
