@@ -7,7 +7,7 @@
       "why": "Live, up-to-date documentation for any library, so answers are not based on stale memory.",
       "kind": "mcp",
       "category": "research",
-      "default": true,
+      "default": false,
       "detect": { "mcp": "context7" },
       "mcp": { "transport": "http", "url": "https://mcp.context7.com/mcp", "header_secret": false },
       "secret": null,

@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+
+- Context7 is no longer connected by default. It stays available in the Tools step.
+- The README is shorter and leads with "set me up"; reference material moved to `docs/details.md`.
+- The setup page header shows the Jarvis OS logo.
+
 ## [0.3.1]
 
 ### Added
