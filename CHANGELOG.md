@@ -3,13 +3,42 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.4.0]
 
 ### Changed
 
+- **`CONTEXT.md` stays small.** `## Active Projects` is now an index: one
+  status line per project (360 characters at most). Each project's history
+  goes to `<hub>/projects/<name>.md`, newest first. `/done` and memory
+  consolidation replace the status line and append to the history file; they
+  never add a second line for a project. Without this the file only grows,
+  and every session pays to load it.
+- `update-context.py` has a project mode:
+  `--project NAME --status TEXT [--history TEXT|-]`. It is idempotent, moves
+  stray duplicate lines into the history file instead of dropping them, and
+  writes atomically. The session-line mode is unchanged.
+- Resolved or stale Open Threads are moved verbatim to
+  `<hub>/archive/open-threads-archived-YYYY-MM-DD.md`, with a reason. When in
+  doubt, a thread stays.
 - Context7 is no longer connected by default. It stays available in the Tools step.
 - The README is shorter and leads with "set me up"; reference material moved to `docs/details.md`.
 - The setup page header shows the Jarvis OS logo.
+
+### Added
+
+- `skills/memory-consolidation/scripts/split-context.py`: one-time migration
+  for an existing hub with a long Active Projects section. Dry run by default;
+  `--apply` backs up `CONTEXT.md` to `archive/` first and moves every original
+  entry verbatim. Re-running it changes nothing.
+- **`recall` (optional, experimental, off by default).** A `SessionEnd` hook
+  starts a detached worker that writes a session note to
+  `<hub>/staging/session-notes/` with one `claude -p` call; a `SessionStart`
+  hook lists the last six sessions; the skill searches notes and transcripts.
+  Both hooks do nothing unless you opt in (`<hub>/.session-recall` or
+  `JARVIS_SESSION_RECALL=1`; `JARVIS_SESSION_RECALL=0` always wins). Notes go
+  to staging only, so you review them before trusting them. Known limits:
+  `SessionEnd` is not verified when a Claude Desktop window closes, the
+  worker needs a valid `claude` login, and secret redaction is regex-only.
 
 ## [0.3.1]
 

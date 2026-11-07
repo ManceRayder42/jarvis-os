@@ -307,6 +307,20 @@
       "default": false,
       "category": "research",
       "details": "Reads the Claude Code changelog, keeps what matters for your setup, writes a dated digest to the hub. Silence is a valid result."
+    },
+    {
+      "id": "recall",
+      "name": "Session Recall (experimental)",
+      "description": "Finds what you decided in earlier sessions",
+      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/optional-skills/recall/SKILL.md",
+      "license": "MIT",
+      "author": "jarvis-os project",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": false,
+      "category": "research",
+      "details": "EXPERIMENTAL and opt-in. After enabling it with a flag file in your hub, each session of 5+ messages makes one `claude -p` call (uses your subscription usage) to write a short note into the hub's staging/ folder only, never the hub itself; a start-of-session index lists recent sessions. Needs a valid `claude` login; session-end capture is not verified when closing a Claude Desktop window."
     }
   ]
 }

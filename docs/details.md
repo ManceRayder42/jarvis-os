@@ -116,6 +116,11 @@ everything), so Claude Code only ever sees it once it's genuinely turned on.
   software (tens of megabytes), the same "not in the first minute" bar
   `media-gen` is held to.
 - `voice` — needs your own ElevenLabs key, same reasoning as `media-gen`.
+- `recall` — **experimental.** Writes a short note for each finished session
+  into `<hub>/staging/session-notes/` (staging only, never your memory) and
+  lets you search past sessions. It costs one `claude -p` call per session,
+  so it stays off until you turn it on: `touch <hub>/.session-recall` or set
+  `JARVIS_SESSION_RECALL=1`. Details in `optional-skills/recall/SKILL.md`.
 - `obsidian-markdown` / `obsidian-bases` / `json-canvas` / `obsidian-cli` —
   useless, and just clutter in your skill list, if you don't use Obsidian.
   Detected automatically (the app is installed, or you gave setup a vault

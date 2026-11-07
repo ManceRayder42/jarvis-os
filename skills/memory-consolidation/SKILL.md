@@ -85,9 +85,22 @@ Archive entries older than 7 days to `<hub>/archive/YYYY-MM.md` (append). Keep t
 Update only the "Last Session" and "Active Projects" sections based on most recent activity:
 
 - **Last Session:** today's date + topics + open threads
-- **Active Projects:** for each project mentioned in this window, note current status/what's in flight
+- **Active Projects (index, not a log):** this section holds exactly ONE status line per project and nothing else. The history of each project lives in `<hub>/projects/<name>.md`, where `<name>` is the lowercase project name with non-alphanumerics turned into hyphens. For each project mentioned in this window: (1) add a dated entry to `<hub>/projects/<name>.md`, newest first (create the file if absent, with small frontmatter: `name`, `description`); (2) REPLACE that project's one status line in `CONTEXT.md` with a summary of the new state, 360 characters at most. **Never add a second line for a project.** Do not read whole project files.
 
-Do NOT wipe the file. Only update those two sections. **Exception:** section E below (Pattern Threshold Forcing Function) may also append a line to `## Open Threads` when an Observed Pattern crosses the count ≥3 threshold. If `CONTEXT.md` doesn't exist yet, create it with the minimal scaffold the `done` skill's `update-context.py` uses (frontmatter + Active Projects / Open Threads / Recent Decisions / Recent Sessions headers) rather than skipping the update — consolidation and `/done` share ownership of this file, so either one may be the first to create it.
+Do this through the script rather than by hand, so it stays idempotent and no model ever loads the files:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/done/scripts/update-context.py" \
+  --project "<name>" --status "<one line, current state>" --history "<dated detail>"
+```
+
+It replaces or inserts the single status line, adds the history entry to `<hub>/projects/<name>.md` (skipping an identical entry that is already there), and moves any stray extra lines for the same project into that file verbatim. Re-running it with the same arguments changes nothing. Exit 2 means invalid input (nothing written); exit 1 means a write failed and `CONTEXT.md` was left as it was, so report it instead of retrying blindly.
+
+An existing hub whose Active Projects section already has many dated lines per project: run the one-time migration `python3 "${CLAUDE_PLUGIN_ROOT}/skills/memory-consolidation/scripts/split-context.py"` (dry run), then again with `--apply`. It backs `CONTEXT.md` up to `<hub>/archive/CONTEXT-YYYY-MM-DD-pre-split.md` first and moves every original entry verbatim into the project files.
+
+**Open Threads stay short.** When this run sees that a thread is resolved or stale, do not delete it and do not leave it to pile up: move the line verbatim to `<hub>/archive/open-threads-archived-YYYY-MM-DD.md` (create it with a one-line note on why each was moved, appending if the file exists for today), and leave a single pointer line at the top of the section. Archive only what you can show is resolved or stale; when unsure, keep it.
+
+Do NOT wipe the file. Only update those two sections. **Exception:** section F below (Pattern Threshold Forcing Function) may also append a line to `## Open Threads` when an Observed Pattern crosses the count >=3 threshold, and the stale-thread archiving above removes lines from it. If `CONTEXT.md` doesn't exist yet, create it with the minimal scaffold the `done` skill's `update-context.py` uses (frontmatter + Active Projects / Open Threads / Recent Decisions / Recent Sessions headers) rather than skipping the update; the script does this itself. Consolidation and `/done` share ownership of this file, so either one may be the first to create it.
 
 ## Pattern detection heuristics
 

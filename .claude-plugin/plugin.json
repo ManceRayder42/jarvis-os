@@ -1,6 +1,6 @@
 {
   "name": "jarvis-os",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "A persistent memory hub for Claude Code that loads into every session from any directory, plus a curated set of research and workflow skills.",
   "author": {
     "name": "Or Gelbgisser",
@@ -26,6 +26,27 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"",
             "timeout": 5,
             "statusMessage": "Loading Jarvis memory..."
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-recall.mjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-recall.mjs\"",
+            "timeout": 5
           }
         ]
       }

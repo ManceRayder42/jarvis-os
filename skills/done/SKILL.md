@@ -100,13 +100,23 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/done/scripts/update-context.py" <<'ENTRY'
 ENTRY
 ```
 
-You already have the content — you just wrote the session note. One line, newest-first. The script owns the `## Recent Sessions` region between the `SESSIONS:START/END` markers and creates `CONTEXT.md` from a minimal scaffold if it doesn't exist yet — the `## Active Projects` / `## Open Threads` / `## Recent Decisions` sections above that region are untouched by this script.
+You already have the content — you just wrote the session note. One line, newest-first. The script owns the `## Recent Sessions` region between the `SESSIONS:START/END` markers and creates `CONTEXT.md` from a minimal scaffold if it doesn't exist yet — the `## Active Projects` / `## Open Threads` / `## Recent Decisions` sections above that region are untouched by this script unless you call it in project mode (below).
 
 Re-running `/done` in the same day is safe: the script matches on the `sessions/…md` path in your entry and **replaces** the existing line instead of stacking a duplicate (it reports `replaced=1`). So keep the note path in the entry — it's what makes the update idempotent.
 
 Exit code `2` means you piped an empty entry, which means step 4 didn't actually happen — fix the entry and rerun.
 
-**State sections** (Active Projects / Open Threads) update separately and only when something genuinely changed: edit in place with a targeted `offset`/`limit` Read around that section, never a full-file Read.
+**State sections** update separately and only when something genuinely changed.
+
+- **Active Projects is an index: ONE status line per project, never more.** The history of a project lives in `<hub>/projects/<name>.md`. When a project moved this session, use the same script in project mode (it replaces the single status line, adds the dated detail to the project file, creates the file if absent, and is safe to re-run):
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/skills/done/scripts/update-context.py" \
+    --project "<name>" --status "<one line, 360 chars max>" --history "<dated detail>"
+  ```
+
+  Never append a second dated line for a project to `CONTEXT.md`. A hub that still has many lines per project can be migrated once with `skills/memory-consolidation/scripts/split-context.py`.
+- **Open Threads:** edit in place with a targeted `offset`/`limit` Read around that section, never a full-file Read. A thread that is resolved or stale is moved verbatim to `<hub>/archive/open-threads-archived-YYYY-MM-DD.md`, not deleted.
 
 ### 5. Patterns (substantial sessions only)
 
