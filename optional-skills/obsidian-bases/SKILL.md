@@ -1,14 +1,16 @@
+---
+name: obsidian-bases
+description: Create and edit Obsidian Bases (.base files) with views, filters, formulas, and summaries. Use when working with .base files, creating database-like views of notes, or when the user mentions Bases, table views, card views, filters, or formulas in Obsidian.
+---
+
 <!--
 Vendored from kepano/obsidian-skills (github.com/kepano/obsidian-skills),
 skills/obsidian-bases/, by Steph Ango (@kepano). MIT License. Copied from
 the current upstream source (a couple of filter-example lines differ from
 the SKILL.md this repo previously had installed locally, which had gone
-slightly stale — see LICENSE-AUDIT.md) — no other modifications.
+slightly stale — see LICENSE-AUDIT.md) — no other modifications except that this notice now sits below the
+frontmatter, so parsers that need `---` on line 1 can read it.
 -->
----
-name: obsidian-bases
-description: Create and edit Obsidian Bases (.base files) with views, filters, formulas, and summaries. Use when working with .base files, creating database-like views of notes, or when the user mentions Bases, table views, card views, filters, or formulas in Obsidian.
----
 
 # Obsidian Bases Skill
 

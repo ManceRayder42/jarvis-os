@@ -1,12 +1,14 @@
-<!--
-Vendored from kepano/obsidian-skills (github.com/kepano/obsidian-skills),
-skills/json-canvas/, by Steph Ango (@kepano). MIT License. Copied
-byte-for-byte from the upstream source — no modifications.
--->
 ---
 name: json-canvas
 description: Create and edit JSON Canvas files (.canvas) with nodes, edges, groups, and connections. Use when working with .canvas files, creating visual canvases, mind maps, flowcharts, or when the user mentions Canvas files in Obsidian.
 ---
+
+<!--
+Vendored from kepano/obsidian-skills (github.com/kepano/obsidian-skills),
+skills/json-canvas/, by Steph Ango (@kepano). MIT License. Copied
+from the upstream source; the only change is that this notice now sits
+below the frontmatter, so parsers that need `---` on line 1 can read it.
+-->
 
 # JSON Canvas Skill
 

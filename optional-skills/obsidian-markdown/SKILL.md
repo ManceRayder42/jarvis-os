@@ -1,12 +1,14 @@
-<!--
-Vendored from kepano/obsidian-skills (github.com/kepano/obsidian-skills),
-skills/obsidian-markdown/, by Steph Ango (@kepano). MIT License. Copied
-byte-for-byte from the upstream source — no modifications.
--->
 ---
 name: obsidian-markdown
 description: Create and edit Obsidian Flavored Markdown with wikilinks, embeds, callouts, properties, and other Obsidian-specific syntax. Use when working with .md files in Obsidian, or when the user mentions wikilinks, callouts, frontmatter, tags, embeds, or Obsidian notes.
 ---
+
+<!--
+Vendored from kepano/obsidian-skills (github.com/kepano/obsidian-skills),
+skills/obsidian-markdown/, by Steph Ango (@kepano). MIT License. Copied
+from the upstream source; the only change is that this notice now sits
+below the frontmatter, so parsers that need `---` on line 1 can read it.
+-->
 
 # Obsidian Flavored Markdown Skill
 

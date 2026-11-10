@@ -1,14 +1,3 @@
-<!--
-Vendored from tobi/qmd (github.com/tobi/qmd), npm package @tobilu/qmd, by
-Tobi Lutke. MIT License.
-
-This is NOT the current upstream file. It is a trimmed, hand-edited fork:
-the installed copy this was vendored from is frontmatter-versioned 2.0.0,
-while upstream is at 2.2.0 as of this writing and has since added
-`--full-path`, `:from:count` line-slicing, `qmd doctor`, and an expanded MCP
-setup section. Ship this as a known-older excerpt, not as current upstream —
-check github.com/tobi/qmd for the latest if you need those features.
--->
 ---
 name: qmd
 description: Search markdown knowledge bases, notes, and documentation using QMD. Use when users ask to search notes, find documents, or look up information.
@@ -19,6 +8,20 @@ metadata:
   version: "2.0.0"
 allowed-tools: Bash(qmd:*), mcp__qmd__*
 ---
+
+<!--
+Vendored from tobi/qmd (github.com/tobi/qmd), npm package @tobilu/qmd, by
+Tobi Lutke. MIT License.
+
+(This notice sits below the frontmatter so parsers that need `---` on line 1 can read it.)
+
+This is NOT the current upstream file. It is a trimmed, hand-edited fork:
+the installed copy this was vendored from is frontmatter-versioned 2.0.0,
+while upstream is at 2.2.0 as of this writing and has since added
+`--full-path`, `:from:count` line-slicing, `qmd doctor`, and an expanded MCP
+setup section. Ship this as a known-older excerpt, not as current upstream —
+check github.com/tobi/qmd for the latest if you need those features.
+-->
 
 # QMD - Quick Markdown Search
 

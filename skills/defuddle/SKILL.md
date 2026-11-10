@@ -1,12 +1,14 @@
-<!--
-Vendored from kepano/obsidian-skills (github.com/kepano/obsidian-skills),
-skills/defuddle/SKILL.md, by Steph Ango (@kepano). MIT License. Copied
-byte-for-byte from the upstream source — no modifications.
--->
 ---
 name: defuddle
 description: Extract clean markdown content from web pages using Defuddle CLI, removing clutter and navigation to save tokens. Use instead of WebFetch when the user provides a URL to read or analyze, for online documentation, articles, blog posts, or any standard web page. Do NOT use for URLs ending in .md — those are already markdown, use WebFetch directly.
 ---
+
+<!--
+Vendored from kepano/obsidian-skills (github.com/kepano/obsidian-skills),
+skills/defuddle/SKILL.md, by Steph Ango (@kepano). MIT License. Copied
+from the upstream source; the only change is that this notice now sits
+below the frontmatter, so parsers that need `---` on line 1 can read it.
+-->
 
 # Defuddle
 
