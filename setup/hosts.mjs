@@ -10,8 +10,8 @@
 //           ~/.agents/skills/<id>       one symlink per enabled skill
 //   cursor  ~/.cursor/hooks.json        sessionStart hook -> hooks/session-start.mjs --host cursor
 //           ~/.cursor/mcp.json          mcpServers.<id> entries
-//           ~/.cursor/skills/<id>       one copy per enabled skill (Cursor does not reliably follow symlinks)
-//           <project>/.cursor/rules/jarvis-hub.mdc   only with --project (Cursor has no global rules file on disk)
+//           ~/.cursor/skills/<id>       one copy per enabled skill (older Cursor builds did not follow symlinks; copies are always safe)
+//           <project>/.cursor/rules/jarvis-hub.mdc   only with --project (~/.cursor/rules is only partly supported by Cursor, so it is not written)
 //
 // Rules every write obeys:
 //   - idempotent: running twice changes nothing the second time
@@ -327,6 +327,13 @@ function codexHome(ctx) { return ctx.codexHome || path.join(ctx.home, '.codex');
 
 function tomlStr(s) { return JSON.stringify(String(s)); }
 
+// npx prompts before installing a package; an MCP server cannot answer, so add -y.
+function stdioArgs(command) {
+  const args = command.slice(1);
+  if (command[0] === 'npx' && !args.some((a) => a === '-y' || a === '--yes')) args.unshift('-y');
+  return args;
+}
+
 function codexMcpBlock(tools, skipIds) {
   const lines = [];
   const used = [];
@@ -338,7 +345,9 @@ function codexMcpBlock(tools, skipIds) {
       if (m.header_secret) lines.push('bearer_token_env_var = ' + tomlStr(tokenEnv(t.id)));
     } else if (m.transport === 'stdio' && Array.isArray(m.command) && m.command.length) {
       lines.push('[mcp_servers.' + t.id + ']', 'command = ' + tomlStr(m.command[0]));
-      if (m.command.length > 1) lines.push('args = [' + m.command.slice(1).map(tomlStr).join(', ') + ']');
+      const args = stdioArgs(m.command);
+      if (args.length) lines.push('args = [' + args.map(tomlStr).join(', ') + ']');
+      lines.push('startup_timeout_sec = 60');
     } else continue;
     lines.push('');
     used.push(t);
@@ -359,10 +368,13 @@ function userDefinedMcp(tomlText) {
 }
 
 function codexInstructionFile(ctx) {
-  // Codex reads AGENTS.override.md instead of AGENTS.md when the override exists.
+  // Codex reads AGENTS.override.md instead of AGENTS.md when the override exists and is not empty.
   const dir = codexHome(ctx);
   const override = path.join(dir, 'AGENTS.override.md');
-  return { target: lstat(override) ? override : path.join(dir, 'AGENTS.md'), both: [override, path.join(dir, 'AGENTS.md')] };
+  // An empty override is skipped by Codex, which then reads AGENTS.md.
+  const t = readText(override);
+  const useOverride = Boolean(lstat(override)) && t !== null && t.trim() !== '';
+  return { target: useOverride ? override : path.join(dir, 'AGENTS.md'), both: [override, path.join(dir, 'AGENTS.md')] };
 }
 
 function codexHookCommand(ctx) {
@@ -412,7 +424,7 @@ function installCodex(ctx) {
     if (j) {
       const data = j.data;
       data.hooks = data.hooks && typeof data.hooks === 'object' ? data.hooks : {};
-      const entry = { hooks: [{ type: 'command', command: codexHookCommand(ctx), statusMessage: 'Loading Jarvis memory...', timeout: 10, additionalContextLimit: 6000 }] };
+      const entry = { matcher: 'startup|resume|clear', hooks: [{ type: 'command', command: codexHookCommand(ctx), statusMessage: 'Loading Jarvis memory...', timeout: 10, additionalContextLimit: 6000 }] };
       data.hooks.SessionStart = upsertEntry(Array.isArray(data.hooks.SessionStart) ? data.hooks.SessionStart : [], (g) => groupHas(g, CODEX_HOOK_RE), entry);
       commitFile(ctx, 'hook', file, jsonOut(data), 'SessionStart; Codex asks you to trust it once: run /hooks inside codex');
     }
@@ -501,7 +513,8 @@ function cursorMcpEntry(t) {
   }
   if (m.transport === 'stdio' && Array.isArray(m.command) && m.command.length) {
     const e = { type: 'stdio', command: m.command[0] };
-    if (m.command.length > 1) e.args = m.command.slice(1);
+    const args = stdioArgs(m.command);
+    if (args.length) e.args = args;
     return e;
   }
   return null;
@@ -685,11 +698,13 @@ export function hostStatus(host, opts) {
 export const GAPS = {
   codex: [
     'Memory at session start: the hook needs a one-time trust. Run codex, type /hooks and trust "Loading Jarvis memory...". Until then the AGENTS.md block makes Codex read the hub itself.',
-    'Skills are loaded when Codex starts; restart it after install. Optional skills you enable later need install-host to be run again.',
+    'Codex detects new skills automatically; restart Codex only if they do not appear. Optional skills you enable later need install-host to be run again.',
   ],
   cursor: [
-    'Cursor documents no global rules file on disk. Add the User Rule once by hand (Cursor Settings > Rules > User Rules): node setup/agent.mjs install-host cursor --print-user-rule',
-    'The sessionStart hook is fire-and-forget in Cursor, and the docs do not say it runs in the CLI agent. Treat the User Rule (or --project rule) as the reliable path.',
-    'Skills are copied, not linked (Cursor may not follow symlinks). Run install-host again after a plugin update or after enabling a skill.',
+    'Cursor has no global rules file that install-host can write: ~/.cursor/rules is only partly supported (needs --- frontmatter, loads only for workspaces under your home folder), so it is not written. Add the User Rule once by hand (Customize > Rules; older builds: Cursor Settings > Rules > User Rules): node setup/agent.mjs install-host cursor --print-user-rule',
+    'Cursor CLI: the documented rule sources are .cursor/rules in the project (install-host cursor --project <dir>) or an AGENTS.md / CLAUDE.md at the project root. Whether the User Rule applies in the CLI is not documented.',
+    'The sessionStart hook is fire-and-forget. The Agents Window drops its additional_context (a known Cursor issue, forum thread 174143, 2026-10-09); the editor agent panel works. One user reports CLI 2026.11.05 not loading ~/.cursor/hooks.json (forum thread 177989), unconfirmed. Treat the User Rule (or --project rule) as the reliable path.',
+    'Skills are copied, not linked (older Cursor builds did not follow symlinked skills; fixed in 2.5, copies stay safe). Run install-host again after a plugin update or after enabling a skill. If you turn on "Sync Skills for Cloud Agents", Cursor moves ~/.cursor/skills contents to synced storage and a later install-host run may conflict.',
+    'Cursor CLI asks for approval before using MCP servers: run `agent mcp enable <id>` or start with `--approve-mcps`.',
   ],
 };

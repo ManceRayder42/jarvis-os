@@ -55,12 +55,13 @@ test('codex: fresh install writes instructions, hook, MCP block and skill links'
   const h = hooks.hooks.SessionStart[0].hooks[0];
   assert.equal(h.type, 'command');
   assert.equal(h.command, `node ${JSON.stringify(path.join(ROOT, 'hooks', 'session-start.mjs'))} --host codex`);
+  assert.equal(hooks.hooks.SessionStart[0].matcher, 'startup|resume|clear');
 
   const toml = read(path.join(home, '.codex', 'config.toml'));
-  assert.match(toml, /\[mcp_servers\.playwright\]\ncommand = "npx"\nargs = \["@playwright\/mcp@latest"\]/);
+  assert.match(toml, /\[mcp_servers\.playwright\]\ncommand = "npx"\nargs = \["-y", "@playwright\/mcp@latest"\]\nstartup_timeout_sec = 60/);
   assert.doesNotMatch(toml, /context7|supabase/, 'only the recommended, keyless servers by default');
   const parsed = tomlParse(path.join(home, '.codex', 'config.toml'));
-  if (parsed) assert.deepEqual(parsed.mcp_servers.playwright, { command: 'npx', args: ['@playwright/mcp@latest'] });
+  if (parsed) assert.deepEqual(parsed.mcp_servers.playwright, { command: 'npx', args: ['-y', '@playwright/mcp@latest'], startup_timeout_sec: 60 });
 
   const skillsDir = path.join(home, '.agents', 'skills');
   const ids = listSkills(ROOT);
@@ -171,6 +172,19 @@ test('codex: AGENTS.override.md wins over AGENTS.md, so the block goes there', (
   assert.equal(read(path.join(dir, 'AGENTS.override.md')), 'override\n');
 });
 
+test('codex: an empty AGENTS.override.md is skipped by Codex, so the block goes to AGENTS.md', () => {
+  const home = tmp();
+  const dir = path.join(home, '.codex');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'AGENTS.override.md'), '  \n');
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), 'plain\n');
+  installHost('codex', { home, pluginRoot: ROOT });
+  assert.match(read(path.join(dir, 'AGENTS.md')), /jarvis-os \(managed/);
+  assert.equal(read(path.join(dir, 'AGENTS.override.md')), '  \n');
+  uninstallHost('codex', { home, pluginRoot: ROOT });
+  assert.equal(read(path.join(dir, 'AGENTS.md')), 'plain\n');
+});
+
 test('codex: invalid hooks.json is reported and left untouched', () => {
   const home = tmp();
   const dir = path.join(home, '.codex');
@@ -205,7 +219,7 @@ test('codex: --mcp all adds the keyed/optional servers, keys come from env vars 
   installHost('codex', { home, pluginRoot: root, mcp: 'all' });
   const toml = read(path.join(home, '.codex', 'config.toml'));
   assert.match(toml, /\[mcp_servers\.alpha\]\nurl = "https:\/\/alpha\.example\/mcp"\nbearer_token_env_var = "JARVIS_MCP_ALPHA_TOKEN"/);
-  assert.match(toml, /\[mcp_servers\.beta-two\]\ncommand = "npx"\nargs = \["-y", "beta"\]/);
+  assert.match(toml, /\[mcp_servers\.beta-two\]\ncommand = "npx"\nargs = \["-y", "beta"\]\nstartup_timeout_sec = 60/);
   const parsed = tomlParse(path.join(home, '.codex', 'config.toml'));
   if (parsed) assert.equal(parsed.mcp_servers.alpha.bearer_token_env_var, 'JARVIS_MCP_ALPHA_TOKEN');
 });
@@ -271,7 +285,7 @@ test('cursor: fresh install writes hook, mcp.json and skill copies', () => {
   assert.equal(hooks.version, 1);
   assert.equal(hooks.hooks.sessionStart[0].command, `node ${JSON.stringify(path.join(ROOT, 'hooks', 'session-start.mjs'))} --host cursor`);
   const mcp = JSON.parse(read(path.join(home, '.cursor', 'mcp.json')));
-  assert.deepEqual(mcp.mcpServers.playwright, { type: 'stdio', command: 'npx', args: ['@playwright/mcp@latest'] });
+  assert.deepEqual(mcp.mcpServers.playwright, { type: 'stdio', command: 'npx', args: ['-y', '@playwright/mcp@latest'] });
   const skill = path.join(home, '.cursor', 'skills', 'done');
   assert.equal(fs.lstatSync(skill).isSymbolicLink(), false, 'copied, not linked');
   assert.ok(exists(path.join(skill, 'scripts', 'update-context.py')));

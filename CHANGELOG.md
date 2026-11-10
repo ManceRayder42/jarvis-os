@@ -9,13 +9,15 @@ All notable changes to this project are documented here. Format follows
 
 - **Codex CLI and Cursor.** `node setup/agent.mjs install-host codex|cursor`
   connects either host to the same memory folder, skills and tool list:
-  - Codex: a `SessionStart` hook in `~/.codex/hooks.json`, a managed block in
-    `~/.codex/AGENTS.md` (or `AGENTS.override.md`), `[mcp_servers.*]` tables
-    in `~/.codex/config.toml`, skills linked into `~/.agents/skills/`.
+  - Codex: a `SessionStart` hook (matcher `startup|resume|clear`) in
+    `~/.codex/hooks.json`, a managed block in `~/.codex/AGENTS.md` (or a
+    non-empty `AGENTS.override.md`), `[mcp_servers.*]` tables (stdio servers
+    get `startup_timeout_sec = 60` and `npx -y`) in `~/.codex/config.toml`, skills linked into `~/.agents/skills/`.
   - Cursor: a `sessionStart` hook in `~/.cursor/hooks.json`, `mcpServers`
     entries in `~/.cursor/mcp.json`, skills copied to `~/.cursor/skills/`,
     optional per-project `.cursor/rules/jarvis-hub.mdc`, and
-    `--print-user-rule` for Cursor's User Rules (no global rules file exists).
+    `--print-user-rule` for Cursor's User Rules (`~/.cursor/rules` is only
+    partly supported by Cursor, so install-host does not write there).
   Idempotent, backs up every file it edits, never overwrites user content,
   `uninstall-host` reverses it, `host-status` reports it, `--dry-run` previews.
   Per-host mechanism, doc links and the gaps are in `docs/details.md`.
@@ -43,7 +45,12 @@ All notable changes to this project are documented here. Format follows
   Cursor: `install-host cursor`, restart Cursor, check Settings, MCP and the
   skills list, add the User Rule.
 - Cursor documents `sessionStart` as fire-and-forget and gives no CLI
-  guarantee; the User Rule is the reliable path there.
+  guarantee. The Agents Window drops its `additional_context` (known Cursor
+  issue); one unconfirmed report says CLI 2026.11.05 ignores
+  `~/.cursor/hooks.json`. The User Rule (or `--project` rule) is the reliable
+  path; for the CLI the documented sources are `.cursor/rules` or a
+  project-root `AGENTS.md`. Cursor CLI also needs MCP approval
+  (`agent mcp enable <id>` or `--approve-mcps`).
 
 ## [0.4.0]
 

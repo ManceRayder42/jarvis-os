@@ -52,7 +52,7 @@ the gaps listed in [details](docs/details.md#codex-and-cursor).
 |---|---|
 | **Claude Code** | the two lines above |
 | **Codex CLI** | `git clone https://github.com/ManceRayder42/jarvis-os ~/.jarvis-os && node ~/.jarvis-os/setup/agent.mjs setup --host codex && node ~/.jarvis-os/setup/agent.mjs install-host codex`, then run `/hooks` once inside Codex and trust the hook |
-| **Cursor** | the same with `cursor`, then `node ~/.jarvis-os/setup/agent.mjs install-host cursor --print-user-rule` and paste the output into Cursor Settings, Rules, User Rules |
+| **Cursor** | the same with `cursor`, then `node ~/.jarvis-os/setup/agent.mjs install-host cursor --print-user-rule` and paste the output into Customize > Rules (older builds: Cursor Settings > Rules > User Rules) |
 
 It backs up any file it edits and never overwrites yours. Undo:
 `node ~/.jarvis-os/setup/agent.mjs uninstall-host codex` (or `cursor`).
