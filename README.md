@@ -28,6 +28,8 @@ claude plugin marketplace add ManceRayder42/jarvis-os
 claude plugin install jarvis-os
 ```
 
+One step on Claude Code 2.1.275 or later: `/plugin install jarvis-os --marketplace ManceRayder42/jarvis-os`
+
 **2. Restart Claude Code and say "set me up".** Claude creates your memory
 folder, turns on the default skills and connects the free tools. It asks once
 before installing any software, and leaves you only what needs a person: a key
@@ -39,6 +41,21 @@ that does the same thing.
 <p align="center">
   <img src="assets/setup.png" alt="The /jarvis-setup page: a numbered checklist on the left, the open step on the right" width="760">
 </p>
+
+## Works with Claude Code, Codex and Cursor
+
+Same memory folder, same skills, same tools. Claude Code is the full experience;
+Codex and Cursor get the same three things through their own config files, with
+the gaps listed in [details](docs/details.md#codex-and-cursor).
+
+| | Install |
+|---|---|
+| **Claude Code** | the two lines above |
+| **Codex CLI** | `git clone https://github.com/ManceRayder42/jarvis-os ~/.jarvis-os && node ~/.jarvis-os/setup/agent.mjs setup --host codex && node ~/.jarvis-os/setup/agent.mjs install-host codex`, then run `/hooks` once inside Codex and trust the hook |
+| **Cursor** | the same with `cursor`, then `node ~/.jarvis-os/setup/agent.mjs install-host cursor --print-user-rule` and paste the output into Cursor Settings, Rules, User Rules |
+
+It backs up any file it edits and never overwrites yours. Undo:
+`node ~/.jarvis-os/setup/agent.mjs uninstall-host codex` (or `cursor`).
 
 ## What you actually get
 

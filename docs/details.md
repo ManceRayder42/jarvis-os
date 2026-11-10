@@ -143,6 +143,82 @@ a live Claude Code conversation prints it). Re-run `enable` after a
 which undoes anything switched on at runtime, the same way it would undo any
 other local edit to an installed plugin.
 
+## Codex and Cursor
+
+`node setup/agent.mjs install-host codex|cursor` wires the host to the same
+memory folder, the same skills and the same tool list. It writes only the
+files the host documents (table below), is safe to run twice, backs up a file
+before changing it (`<file>.jarvis-os-backup-<timestamp>`), never overwrites
+anything that is yours, and `uninstall-host` removes exactly what it added.
+`--dry-run` shows what it would do. It needs no server and no new dependency.
+
+Clone the repo to a stable place first (`git clone https://github.com/ManceRayder42/jarvis-os ~/.jarvis-os`),
+because the hook and the instructions contain that path. Moved it, or updated
+the clone? Run `install-host` again; it rewrites the paths. (A Claude Code
+plugin cache folder changes with each version, so do not point Codex or Cursor
+at it.)
+
+```bash
+node setup/agent.mjs setup --host codex          # create the memory folder (Claude Code is not required)
+node setup/agent.mjs install-host codex          # or: cursor
+node setup/agent.mjs install-host codex --mcp all        # also Context7, Supabase, ...
+node setup/agent.mjs install-host cursor --print-user-rule   # text for Cursor's User Rules
+node setup/agent.mjs install-host cursor --project ~/code/app   # also write .cursor/rules/jarvis-hub.mdc there
+node setup/agent.mjs host-status codex
+node setup/agent.mjs uninstall-host codex
+```
+
+`connect <tool-id> --host codex|cursor` adds one MCP server the same way.
+`--mcp none`, `--no-skills`, `--no-hook`, `--no-instructions` skip a part;
+`--skills link|copy` overrides how skills are placed.
+
+### What each host gets
+
+Status words: **full** = same behaviour as Claude Code, **fallback** = works,
+but through a different and weaker mechanism, **not possible** = the host
+offers nothing.
+
+**Codex CLI**
+
+| Pillar | Mechanism | Docs | Status |
+|---|---|---|---|
+| Memory loads at session start, any directory | `SessionStart` hook in `~/.codex/hooks.json` running `hooks/session-start.mjs --host codex`; plain stdout becomes developer context | https://developers.openai.com/codex/hooks (now served at https://learn.chatgpt.com/docs/hooks) | **full after a one-time trust**: Codex runs a new hook only after you review it with `/hooks`; a changed command needs review again |
+| Same, before the hook is trusted, or if hooks are off | managed block in `~/.codex/AGENTS.md` (or `AGENTS.override.md` when that exists, because Codex reads it instead) telling the agent where the hub is and to read it first | https://developers.openai.com/codex/guides/agents-md (https://learn.chatgpt.com/docs/agent-configuration/agents-md) | **fallback**: the model has to obey an instruction instead of being handed the text |
+| Skills | one symlink per enabled skill in `~/.agents/skills/` (Codex follows symlinked skill folders) | https://developers.openai.com/codex/skills (https://learn.chatgpt.com/docs/build-skills) | **full**; restart Codex to pick them up |
+| Tools (MCP) | managed block of `[mcp_servers.<id>]` tables in `~/.codex/config.toml`; a server you already defined is left alone; keyed servers read `bearer_token_env_var` and no key is written | https://developers.openai.com/codex/mcp (https://learn.chatgpt.com/docs/extend/mcp) | **full** for http and stdio servers. OAuth sign-in is `codex mcp login <id>` |
+| Slash commands (`/jarvis-setup`, `/done`) | none: Codex skills are invoked as `$done`; the setup page is `node setup/server.mjs` | | **not possible** as slash commands |
+
+**Cursor**
+
+| Pillar | Mechanism | Docs | Status |
+|---|---|---|---|
+| Memory loads at session start | `sessionStart` hook in `~/.cursor/hooks.json` running `hooks/session-start.mjs --host cursor`; prints `{"additional_context": ...}` | https://cursor.com/docs/hooks | **fallback**: Cursor documents the hook as fire-and-forget, and does not say it runs in the CLI agent |
+| Memory, reliable path | Cursor has no global rules file on disk. User Rules are set in the app (`--print-user-rule` prints the text to paste). Per project, `--project <dir>` writes `.cursor/rules/jarvis-hub.mdc` with `alwaysApply: true` | https://cursor.com/docs/context/rules | **fallback**: one manual paste, or one rule file per project; cannot be automated for all directories |
+| Skills | one copy per enabled skill in `~/.cursor/skills/` (a marker file lets `uninstall-host` tell ours from yours). Copies, not links: users report Cursor not following symlinked skills | https://cursor.com/docs/skills ; symlink reports: https://forum.cursor.com/t/global-symlinked-skills-are-not-discovered-by-cursor/150028 | **full** in the IDE; copies go stale, so re-run `install-host` after an update. Reports say `~/.agents/skills` is not read by the CLI agent, so that folder is not used |
+| Tools (MCP) | `mcpServers.<id>` entries merged into `~/.cursor/mcp.json`; a same-named entry that differs is left alone; keyed servers use `${env:NAME}` | https://cursor.com/docs/context/mcp | **full** |
+| Slash commands | none from this plugin; skills run as `/skill-name` | https://cursor.com/docs/skills | **not possible** for `/jarvis-setup` |
+
+### What stays Claude-Code-only
+
+- The setup page's Claude Code connections (`claude mcp add`) and the optional
+  `recall` and Telegram bridge, which depend on Claude Code's hooks and CLI.
+- `${CLAUDE_PLUGIN_ROOT}` in skill text. Codex and Cursor do not set it, so the
+  hook and the instruction block both say which folder it means.
+- `/jarvis-setup` as a slash command (the page still runs: `node setup/server.mjs`).
+
+### Known limits
+
+- Optional skills you enable later (`skills-materializer`) reach Codex and
+  Cursor only when you run `install-host` again; it also removes links to
+  skills you switched off.
+- Cursor reads `~/.agents/skills` too (per its docs). If you install for both
+  hosts, the same skill can appear twice in Cursor.
+- A `config.toml` that defines servers with an inline `mcp_servers = { ... }`
+  table is not detected; use the normal `[mcp_servers.x]` form.
+- Tested against a fake home folder and by running the registered hook
+  command. Codex and Cursor themselves were not run in the author's
+  environment; see the changelog for the checklist to verify on a real install.
+
 ## Phone assistant (Telegram bridge)
 
 Everything in this section is for people who want an always-on assistant

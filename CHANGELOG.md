@@ -3,6 +3,48 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0]
+
+### Added
+
+- **Codex CLI and Cursor.** `node setup/agent.mjs install-host codex|cursor`
+  connects either host to the same memory folder, skills and tool list:
+  - Codex: a `SessionStart` hook in `~/.codex/hooks.json`, a managed block in
+    `~/.codex/AGENTS.md` (or `AGENTS.override.md`), `[mcp_servers.*]` tables
+    in `~/.codex/config.toml`, skills linked into `~/.agents/skills/`.
+  - Cursor: a `sessionStart` hook in `~/.cursor/hooks.json`, `mcpServers`
+    entries in `~/.cursor/mcp.json`, skills copied to `~/.cursor/skills/`,
+    optional per-project `.cursor/rules/jarvis-hub.mdc`, and
+    `--print-user-rule` for Cursor's User Rules (no global rules file exists).
+  Idempotent, backs up every file it edits, never overwrites user content,
+  `uninstall-host` reverses it, `host-status` reports it, `--dry-run` previews.
+  Per-host mechanism, doc links and the gaps are in `docs/details.md`.
+- `hooks/session-start.mjs --host codex|cursor` (plain text / Cursor JSON).
+  Without the flag the output is byte-for-byte what it was.
+- `--host codex|cursor` on `setup`, `status`, `plan` and `connect`: Claude Code
+  is no longer a required check, and `connect` adds the server to that host.
+- `test/hosts.test.mjs` (`node --test test/`): every adapter against a fake
+  HOME, including idempotency, user-content preservation and uninstall.
+- Plugin icon (`assets/jarvis-os.jpg`), version in `marketplace.json`, and the
+  one-step install line in the README.
+
+### Fixed
+
+- Six vendored `SKILL.md` files (`defuddle`, `qmd`, and four Obsidian skills)
+  started with an HTML licence comment before the frontmatter, so
+  `claude plugin validate` reported "no frontmatter" and strict parsers could
+  skip them. The notice now sits below the frontmatter. Text unchanged.
+
+### Known limits (Codex and Cursor)
+
+- Not run against real Codex or Cursor builds by the author. To verify on a
+  real install: Codex: `install-host codex`, start `codex`, run `/hooks`,
+  trust the hook, start a new session and ask what is in your memory.
+  Cursor: `install-host cursor`, restart Cursor, check Settings, MCP and the
+  skills list, add the User Rule.
+- Cursor documents `sessionStart` as fire-and-forget and gives no CLI
+  guarantee; the User Rule is the reliable path there.
+
 ## [0.4.0]
 
 ### Changed
