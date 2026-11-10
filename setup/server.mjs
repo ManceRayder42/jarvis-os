@@ -1590,7 +1590,9 @@ server.listen(0, '127.0.0.1', () => {
   // is different: the SERVER opening the human's actual browser for them,
   // same as `npm create vite` or similar CLIs do. Best-effort and silent;
   // the URL above is printed either way so there's always a fallback.
-  try {
+  // Agent-driven runs (setup/agent.mjs) and tests set JARVIS_NO_OPEN=1: an
+  // agent talks to the API directly, so a browser tab per run is just noise.
+  if (!process.env.JARVIS_NO_OPEN) try {
     const opener = IS_MAC
       ? ['open', [url]]
       : IS_WIN

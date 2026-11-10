@@ -113,7 +113,7 @@ if (cmd === 'install-host' || cmd === 'uninstall-host' || cmd === 'host-status')
 // ---- the server, as a child ------------------------------------------------
 function startServer() {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [path.join(__dirname, 'server.mjs')], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, JARVIS_HOST: HOST } });
+    const child = spawn(process.execPath, [path.join(__dirname, 'server.mjs')], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, JARVIS_HOST: HOST, JARVIS_NO_OPEN: '1' } });
     let buf = '';
     const timer = setTimeout(() => reject(new Error('setup server did not start within 15s')), 15_000);
     child.stdout.on('data', (d) => {
