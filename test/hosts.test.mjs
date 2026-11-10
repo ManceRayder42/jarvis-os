@@ -451,12 +451,12 @@ test('cli: install-host / host-status / uninstall-host through setup/agent.mjs u
   assert.ok(st.rows.every((x) => x.ok));
   assert.equal(run('uninstall-host', 'codex').status, 0);
   assert.deepEqual(tree(home).filter((p) => !/^\.codex$|^\.agents$/.test(p)), []);
-  const c = run('connect', 'context7', '--host', 'cursor');
-  assert.equal(c.status, 0, c.stdout + c.stderr);
-  assert.ok(JSON.parse(read(path.join(home, '.cursor', 'mcp.json'))).mcpServers.context7);
   assert.equal(run('install-host', 'nope').status, 2);
   assert.match(run('install-host', 'cursor', '--print-user-rule').stdout, /Jarvis memory/);
   assert.equal(exists(path.join(home, '.cursor')), false, '--print-user-rule writes nothing');
+  const c = run('connect', 'context7', '--host', 'cursor');
+  assert.equal(c.status, 0, c.stdout + c.stderr);
+  assert.ok(JSON.parse(read(path.join(home, '.cursor', 'mcp.json'))).mcpServers.context7);
 });
 
 // ------------------------------------------------------------------ fixtures
