@@ -639,9 +639,12 @@ function runPreflight() {
     }
   }
 
+  // agent.mjs sets JARVIS_HOST=codex|cursor when the memory is being set up for one of
+  // those hosts; Claude Code is then optional rather than a requirement.
+  const otherHost = /^(codex|cursor)$/.test(process.env.JARVIS_HOST || '');
   const claude = runCommand('claude', ['--version']);
   if (!claude.ok) {
-    checks.push({ id: 'claude', label: 'claude CLI', required: true, ok: false, detail: 'not found', fix: 'see https://claude.com/claude-code' });
+    checks.push({ id: 'claude', label: 'claude CLI', required: !otherHost, ok: false, detail: otherHost ? 'not found (not needed for ' + process.env.JARVIS_HOST + ')' : 'not found', fix: otherHost ? undefined : 'see https://claude.com/claude-code' });
   } else {
     const v = parseSemver(claude.output);
     const meetsMin = versionAtLeast(v, MIN_CLAUDE_VERSION);

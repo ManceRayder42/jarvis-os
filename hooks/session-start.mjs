@@ -22,6 +22,26 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Host adapters (setup/hosts.mjs) register this same script for other agents:
+//   node session-start.mjs --host codex    plain text on stdout (Codex adds it as developer context)
+//   node session-start.mjs --host cursor   JSON {"additional_context": "..."} (Cursor's sessionStart output)
+// No flag = Claude Code, byte-for-byte what it has always printed.
+const hostArg = process.argv.indexOf('--host');
+const HOST = hostArg >= 0 ? String(process.argv[hostArg + 1] || '') : 'claude';
+const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const OUT = [];
+function emit(text) { OUT.push(text); }
+function flush() {
+  let text = OUT.join('');
+  if (!text) return;
+  if (HOST !== 'claude') {
+    // ${CLAUDE_PLUGIN_ROOT} is only set inside Claude Code. The skills mention it, so say what it means here.
+    text += '\n\n[jarvis-os] Plugin root on this host: ' + PLUGIN_ROOT + '. Where a skill says ${CLAUDE_PLUGIN_ROOT}, use this path.\n';
+  }
+  process.stdout.write(HOST === 'cursor' ? JSON.stringify({ additional_context: text }) : text);
+}
 
 const MAX_BYTES = 8 * 1024;
 
@@ -51,7 +71,11 @@ function resolveHub() {
 }
 
 function nudge() {
-  process.stdout.write('[jarvis-os] Not set up yet. Offer to do it for the user (setup-for-me skill: node "$CLAUDE_PLUGIN_ROOT/setup/agent.mjs" plan), or they can run /jarvis-setup for the page.\n');
+  if (HOST !== 'claude') {
+    emit('[jarvis-os] Not set up yet. Offer to do it for the user: node "' + path.join(PLUGIN_ROOT, 'setup', 'agent.mjs') + '" plan\n');
+    return;
+  }
+  emit('[jarvis-os] Not set up yet. Offer to do it for the user (setup-for-me skill: node "$CLAUDE_PLUGIN_ROOT/setup/agent.mjs" plan), or they can run /jarvis-setup for the page.\n');
 }
 
 // Working rules live next to MEMORY.md. Optional: absent or unreadable means
@@ -81,7 +105,7 @@ function emitMemory(hub) {
 
   const byteLength = Buffer.byteLength(content, 'utf8');
   if (byteLength <= MAX_BYTES) {
-    process.stdout.write('# Jarvis memory (' + hub + '/MEMORY.md)\n\n' + content + readWorkingRules(hub));
+    emit('# Jarvis memory (' + hub + '/MEMORY.md)\n\n' + content + readWorkingRules(hub));
     return;
   }
 
@@ -95,7 +119,7 @@ function emitMemory(hub) {
     + Math.round(byteLength / 1024) + 'KB, over the ' + Math.round(MAX_BYTES / 1024)
     + 'KB session-start budget; showing index lines only)\n\n';
   out += indexLines.join('\n');
-  process.stdout.write(out + readWorkingRules(hub));
+  emit(out + readWorkingRules(hub));
 }
 
 try {
@@ -109,4 +133,5 @@ try {
   // Never let a memory hook break session start.
 }
 
+try { flush(); } catch (e) { /* same rule */ }
 process.exit(0);

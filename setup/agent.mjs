@@ -21,6 +21,9 @@
 //   node setup/agent.mjs connect <tool-id>          (asks for a key on the TTY when one is needed)
 //   node setup/agent.mjs obsidian <vault-path>
 //   node setup/agent.mjs plan [--json]              (what is left, in order, and who has to do it)
+//   node setup/agent.mjs install-host codex|cursor  (wire Codex CLI or Cursor to the memory, skills and tools)
+//   node setup/agent.mjs uninstall-host codex|cursor
+//   node setup/agent.mjs host-status codex|cursor
 //
 // Exit code: 0 when the command did what it says, 1 when any part failed,
 // 2 on bad usage.
@@ -34,7 +37,11 @@ const argv = process.argv.slice(2);
 const cmd = argv[0];
 const json = argv.includes('--json');
 const fromClipboard = argv.includes('--from-clipboard');
-const rest = argv.slice(1).filter((a) => a !== '--json' && a !== '--from-clipboard');
+// --host codex|cursor (or JARVIS_HOST) points status/plan/connect at that host instead of Claude Code.
+const hostIdx = argv.indexOf('--host');
+const HOST = (hostIdx >= 0 ? argv[hostIdx + 1] : process.env.JARVIS_HOST) || '';
+if (HOST && !/^(codex|cursor)$/.test(HOST)) { console.error('--host takes codex or cursor'); process.exit(2); }
+const rest = argv.slice(1).filter((a, i, all) => a !== '--json' && a !== '--from-clipboard' && a !== '--host' && all[i - 1] !== '--host');
 // Plan lines print an absolute command, so an agent (or a person) can run them
 // from any directory without knowing where the plugin is installed.
 const SELF = 'node "' + path.join(__dirname, 'agent.mjs') + '"';
@@ -45,14 +52,68 @@ const USAGE = `usage: node setup/agent.mjs <command>
   enable <id>... | disable <id>...        switch skills
   install <id>...                         install programs from the Tools list
   connect <id> [--from-clipboard]         connect a connection (a key comes from a hidden prompt or the clipboard, never an argument)
-  obsidian <vault-path>                   link the memory into an Obsidian vault`;
+  obsidian <vault-path>                   link the memory into an Obsidian vault
+  install-host <codex|cursor> [--mcp default|none|all|id,id] [--no-skills] [--no-hook] [--no-instructions]
+                              [--skills link|copy] [--project <dir>] [--print-user-rule] [--dry-run]
+                                          use Jarvis OS from Codex CLI or Cursor (backs up what it edits; undo with uninstall-host)
+  uninstall-host <codex|cursor> [--project <dir>] [--dry-run]
+  host-status <codex|cursor> [--project <dir>]`;
 
 if (!cmd || cmd === 'help' || cmd === '--help') { console.log(USAGE); process.exit(cmd ? 0 : 2); }
+
+// ---- host adapters: files only, no server ------------------------------------
+if (cmd === 'install-host' || cmd === 'uninstall-host' || cmd === 'host-status') {
+  const hosts = await import('./hosts.mjs');
+  const flag = (n) => { const i = rest.indexOf(n); return i >= 0 ? rest[i + 1] : undefined; };
+  const host = rest[0];
+  if (host === 'claude') {
+    console.log('Claude Code uses the plugin itself, no host wiring needed:\n  claude plugin marketplace add ManceRayder42/jarvis-os\n  claude plugin install jarvis-os');
+    process.exit(0);
+  }
+  if (!hosts.HOSTS.includes(host)) { console.error('usage: ' + cmd + ' <' + hosts.HOSTS.join('|') + '>\n\n' + USAGE); process.exit(2); }
+  if (rest.includes('--print-user-rule')) { process.stdout.write(hosts.userRuleText()); process.exit(0); }
+  const mcpFlag = flag('--mcp');
+  const opts = {
+    dryRun: rest.includes('--dry-run'),
+    project: flag('--project'),
+    mcp: mcpFlag === undefined ? 'default' : ['default', 'none', 'all'].includes(mcpFlag) ? mcpFlag : mcpFlag.split(',').filter(Boolean),
+    skills: !rest.includes('--no-skills'),
+    hook: !rest.includes('--no-hook'),
+    instructions: !rest.includes('--no-instructions'),
+    skillMode: flag('--skills'),
+  };
+  if (opts.skillMode && !['link', 'copy'].includes(opts.skillMode)) { console.error('--skills takes link or copy'); process.exit(2); }
+  let code = 0;
+  try {
+    if (cmd === 'host-status') {
+      const r = hosts.hostStatus(host, opts);
+      if (json) console.log(JSON.stringify(r, null, 2));
+      else r.rows.forEach((x) => line(x.ok, x.item, x.detail));
+    } else {
+      const r = cmd === 'install-host' ? hosts.installHost(host, opts) : hosts.uninstallHost(host, opts);
+      if (json) console.log(JSON.stringify(r, null, 2));
+      else {
+        const mark = { created: '✓', updated: '✓', removed: '✓', unchanged: '·', skipped: '·', error: '✗' };
+        const skills = r.actions.filter((a) => a.kind === 'skill');
+        r.actions.filter((a) => a.kind !== 'skill').forEach((a) => console.log(`${mark[a.status]} ${a.kind}: ${a.status}  ${a.path}${a.detail ? '  — ' + a.detail : ''}`));
+        if (skills.length) {
+          const n = (st) => skills.filter((a) => a.status === st).length;
+          console.log(`${skills.some((a) => a.status === 'error') ? '✗' : '✓'} skills: ${n('created')} created, ${n('updated')} updated, ${n('unchanged')} unchanged, ${n('removed')} removed, ${n('skipped')} skipped`);
+          skills.filter((a) => a.status === 'skipped').forEach((a) => console.log('    skipped ' + a.path + ' — ' + a.detail));
+        }
+        if (opts.dryRun) console.log('(dry run: nothing was written)');
+        if (cmd === 'install-host') { console.log('\nLimits on ' + host + ':'); hosts.GAPS[host].forEach((g) => console.log('  - ' + g)); }
+      }
+      if (!r.ok) code = 1;
+    }
+  } catch (e) { console.error('error: ' + e.message); code = 1; }
+  process.exit(code);
+}
 
 // ---- the server, as a child ------------------------------------------------
 function startServer() {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [path.join(__dirname, 'server.mjs')], { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [path.join(__dirname, 'server.mjs')], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, JARVIS_HOST: HOST } });
     let buf = '';
     const timer = setTimeout(() => reject(new Error('setup server did not start within 15s')), 15_000);
     child.stdout.on('data', (d) => {
@@ -126,7 +187,7 @@ async function snapshot() {
 // can do it: `agent` (run the command), `ask` (agent may run it after the
 // person agrees -- it installs software), or `person` (needs a key, a login
 // or an app only a human can operate).
-function buildPlan(s) {
+function buildPlan(s, hostRows) {
   const steps = [];
   const badRequired = s.preflight.filter((c) => c.required && !c.ok);
   badRequired.forEach((c) => steps.push({ step: 'machine', who: 'person', what: 'Fix: ' + c.label, how: c.fix || c.detail }));
@@ -138,7 +199,11 @@ function buildPlan(s) {
     steps.push({ step: 'memory', who: 'agent', what: 'Create the memory folder, turn on default skills' + (also.length ? ', connect ' + also.join(', ') : ''), how: SELF + ' setup' });
   }
   const profileSteps = (s.cfg.profile && s.cfg.profile.steps) || [];
-  const tools = s.tools.filter((t) => t.state !== 'ready' && !bySetup(t));
+  // For Codex/Cursor the MCP servers are not Claude Code connections: one install-host step covers them.
+  const tools = s.tools.filter((t) => t.state !== 'ready' && !bySetup(t) && !(HOST && t.kind === 'mcp'));
+  if (HOST && hostRows && hostRows.some((r) => !r.ok)) {
+    steps.push({ step: 'host', who: 'agent', what: 'Wire ' + HOST + ' to the memory, skills and tools', how: SELF + ' install-host ' + HOST, then: 'Add --mcp all for the optional servers. See docs/details.md for what ' + HOST + ' cannot do.' });
+  }
   const order = (t) => (t.category === 'workspace' ? 0 : 1) + (t.default ? 0 : 2);
   tools.sort((a, b) => order(a) - order(b)).forEach((t) => {
     if (t.kind === 'mcp') {
@@ -163,13 +228,20 @@ function buildPlan(s) {
   return steps;
 }
 
+function hostRows() {
+  if (!HOST) return null;
+  try { return hostsMod.hostStatus(HOST, {}).rows; } catch { return null; }
+}
+let hostsMod = null;
+if (HOST) hostsMod = await import('./hosts.mjs');
+
 function line(ok, text, extra) { console.log((ok === true ? '✓ ' : ok === false ? '✗ ' : '· ') + text + (extra ? '  — ' + extra : '')); }
 
 // ---- commands -------------------------------------------------------------
 const COMMANDS = {
   async status() {
     const s = await snapshot();
-    const plan = buildPlan(s);
+    const plan = buildPlan(s, hostRows());
     if (json) return console.log(JSON.stringify({ hub: s.cfg.hub, hub_exists: s.cfg.hub_exists, profile: s.cfg.profile, preflight: s.preflight, skills: s.skills.map(({ id, name, enabled, category }) => ({ id, name, enabled, category })), tools: s.tools.map(({ id, name, kind, state, category, default: d }) => ({ id, name, kind, state, category, default: d })), plan }, null, 2));
     console.log((s.cfg.profile && s.cfg.profile.title) || 'Setup');
     line(!s.preflight.some((c) => c.required && !c.ok), 'Computer', s.preflight.filter((c) => c.ok).length + '/' + s.preflight.length + ' checks');
@@ -181,7 +253,7 @@ const COMMANDS = {
   },
 
   async plan() {
-    const plan = buildPlan(await snapshot());
+    const plan = buildPlan(await snapshot(), hostRows());
     if (json) return console.log(JSON.stringify(plan, null, 2));
     if (!plan.length) return console.log('Nothing left to do.');
     const WHO = { agent: 'agent', ask: 'agent, after asking', person: 'person' };
@@ -229,6 +301,12 @@ const COMMANDS = {
     const { tools } = await api('/api/tools');
     const t = tools.find((x) => x.id === id);
     if (!t) throw new Error('unknown tool: ' + id);
+    if (HOST) {
+      if (t.kind !== 'mcp') throw new Error(id + ' is installed, not connected: use `install ' + id + '`');
+      const r = hostsMod.installHost(HOST, { mcp: [id], skills: false, hook: false, instructions: false });
+      r.actions.forEach((a) => line(a.status !== 'error' && a.status !== 'skipped', id + ' (' + HOST + ')', a.status + (a.detail ? ': ' + a.detail : '')));
+      return r.ok && r.actions.length > 0;
+    }
     let secret;
     if (t.secret) secret = fromClipboard ? readClipboard() : await readHidden((t.secret.label || 'Key') + ' (typing is hidden): ');
     const r = await api('/api/tools/connect', { id, secret });
