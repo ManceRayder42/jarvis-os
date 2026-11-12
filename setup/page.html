@@ -280,6 +280,9 @@ function beat() {
     .catch(() => { missedBeats++; if (missedBeats > 1) setLink(false); });
 }
 setInterval(beat, 3000); beat();
+// A throttled background tab may have skipped beats -- send one the moment it is seen again.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+window.addEventListener('focus', beat);
 function setLink(on) {
   $('#link').dataset.state = on ? 'on' : 'off';
   $('#link-text').textContent = on ? 'Connected to your computer' : 'Setup closed — run /jarvis-setup again';
