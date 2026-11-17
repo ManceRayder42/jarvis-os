@@ -262,7 +262,10 @@ const COMMANDS = {
 
   async setup() {
     const i = rest.indexOf('--hub');
-    const body = i >= 0 && rest[i + 1] ? { hub: rest[i + 1] } : {};
+    // Resolved here so the remembered path works from any directory; a leading
+    // ~ is left for the server to expand.
+    const hubArg = i >= 0 ? rest[i + 1] : '';
+    const body = hubArg ? { hub: hubArg.startsWith('~') ? hubArg : path.resolve(hubArg) } : {};
     const r = await api('/api/setup-all', body);
     if (json) return console.log(JSON.stringify(r, null, 2));
     (r.steps || []).forEach((st) => line(st.ok, st.label, st.ok ? '' : (st.error || '')));
@@ -316,7 +319,8 @@ const COMMANDS = {
 
   async obsidian() {
     if (!rest[0]) throw usage('obsidian needs a vault path');
-    const r = await api('/api/config', { obsidian_vault: rest[0] });
+    const vault = rest[0].startsWith('~') ? rest[0] : path.resolve(rest[0]);
+    const r = await api('/api/config', { obsidian_vault: vault });
     const ok = Boolean(r.vault_link && r.vault_link.linked);
     line(ok, 'Obsidian', ok ? 'linked' : 'could not link that folder');
     return ok;
