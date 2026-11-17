@@ -2,6 +2,21 @@
   "_comment": "Per-skill install catalog for the /jarvis-setup page. One entry per skill the plugin can install individually (replaces the old core/research/media category toggles). Every license/author claim here was checked against a primary source (a local LICENSE file, or upstream raw.githubusercontent.com/<owner>/<repo>/<branch>/LICENSE) -- never a README claim or blog post. See setup/server.mjs's report-back for the exact sources read. `id` must match the skill's directory name under skills/ (or optional-skills/ when disabled).",
   "skills": [
     {
+      "id": "shufi-design",
+      "name": "Shufi Design (main design skill)",
+      "description": "Designs a site or screen as live directions you pick from",
+      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/skills/shufi-design/SKILL.md",
+      "license": "MIT",
+      "author": "jarvis-os project",
+      "note": "Original to this project. This is the process Shufi's own setup page was designed with; Shufi custom.",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": true,
+      "category": "design",
+      "details": "The design process Shufi was built with: references first, 6 live clickable directions in one tabbed page, then narrowed by your words. Shufi custom."
+    },
+    {
       "id": "done",
       "name": "Session Wrap-Up (done)",
       "description": "Saves what happened, so nothing is lost",
@@ -321,21 +336,6 @@
       "default": false,
       "category": "research",
       "details": "EXPERIMENTAL and opt-in. After enabling it with a flag file in your hub, each session of 5+ messages makes one `claude -p` call (uses your subscription usage) to write a short note into the hub's staging/ folder only, never the hub itself; a start-of-session index lists recent sessions. Needs a valid `claude` login; session-end capture is not verified when closing a Claude Desktop window."
-    },
-    {
-      "id": "shufi-design",
-      "name": "Shufi Design",
-      "description": "Designs a site or screen as live directions you pick from",
-      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/skills/shufi-design/SKILL.md",
-      "license": "MIT",
-      "author": "jarvis-os project",
-      "note": "Original to this project. This is the process Shufi's own setup page was designed with; Shufi custom.",
-      "requires": [],
-      "requires_tool": null,
-      "detect": null,
-      "default": true,
-      "category": "dev",
-      "details": "The design process Shufi was built with: references first, 6 live clickable directions in one tabbed page, then narrowed by your words. Shufi custom."
     }
   ]
 }

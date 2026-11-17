@@ -602,8 +602,8 @@ const VIEWS = {
 
     const groups = {};
     state.skills.forEach((s) => { (groups[s.category || 'other'] ||= []).push(s); });
-    const NAMES = { core: 'Everyday', research: 'Research', media: 'Media', dev: 'Building', obsidian: 'Obsidian', team: 'Team' };
-    Object.entries(groups).forEach(([cat, list]) => {
+    const NAMES = { design: 'Design', core: 'Everyday', research: 'Research', media: 'Media', dev: 'Building', obsidian: 'Obsidian', team: 'Team' };
+    Object.entries(groups).sort(([a], [b]) => (b === 'design') - (a === 'design')).forEach(([cat, list]) => {
       out.push(el('div', { className: 'section-label', textContent: NAMES[cat] || cat }));
       const box = el('div', { className: 'list' });
       list.forEach((s) => {
