@@ -97,6 +97,53 @@ semantic search → the web last). Edit it freely — it is yours. Existing
 memory folders get it the next time you run `/jarvis-setup`; nothing already
 there is overwritten.
 
+## Memory hygiene
+
+Two small hooks keep the memory from rotting. Both are plain Node scripts (no Python, no model, no
+network), fail open, and do nothing until your memory folder has a `MEMORY.md`.
+
+**What goes stale.** Looking at a real memory folder, stale facts came in three kinds: paths that
+moved or were archived, versions that changed, and "X is missing / broken" notes that were fixed
+later. All three can be checked by a machine. Two more things drift: an index line that no longer
+matches its file, and a hard-coded list (of projects, say) that rots because nobody re-reads it,
+so derive such lists from the disk at the time you need them. Fix a stale fact with a dated note
+("moved to X, checked 2026-11-19") rather than deleting it: the old fact still explains past
+decisions.
+
+**Memory check** (`hooks/memory-check.mjs`, SessionStart, at most once per 24 hours). Writes
+`<hub>/reports/memory-check-YYYY-MM-DD.md` (the newest 14 are kept) and prints one line when it
+found something. It never edits memory.
+
+| Check | Rule |
+|---|---|
+| Dead paths | Only unambiguous paths: absolute (`/Users/...`), `~/...`, a drive letter. Repo-relative paths, URL routes and anything with `*`, `<x>` or `$` are counted as "not checked", never reported. A path on a line that says moved, gone, archived, הועבר or נמחק goes under "Not counted". |
+| Index | A `MEMORY.md` link to a missing file; a memory file (top-level `.md` with frontmatter, other than `CONTEXT.md`, `patterns.md`, `conversation-log.md`) with no index line. Markdown links and `[[wikilinks]]` both count. |
+| `check:` | Optional line in a memory file's frontmatter: `check: exists ~/path`, `check: absent ~/path`, `check: grep ~/path some text`. Paths must be absolute or `~/`. Any other verb is reported and never run; nothing is ever passed to a shell. |
+| `patterns.md` | Records (`### slug` with `- status:`, `- review:` ...) past their review date, or missing `claim`, `evidence` or `review`. Prose is never judged. |
+
+It stops scanning after about 150 ms and says "partial". Off: `JARVIS_MEMORY_CHECK=0`, or create an
+empty file `<hub>/.memory-check.off`. Run it by hand, ignoring the 24-hour limit:
+`node "$CLAUDE_PLUGIN_ROOT/hooks/memory-check.mjs" --force`.
+
+**Corrections become rules** (`hooks/correction-capture.mjs`, on every prompt you send). If your
+message sounds like a correction ("no, I said...", "I told you", "don't ever", "stop doing",
+"wrong again", "לא, אמרתי", "אמרתי לך", "אל תוסיף", "תפסיק", "שוב טעית"), one short instruction is
+added for that turn (about 85 tokens, once per 4 prompts at most): save a feedback rule in your
+memory folder, or add 1 to `violations:` if the rule exists, and reply "Saved as a rule: ... (say
+'undo' to remove)". Words like "always" and "never" count only inside an instruction ("always use
+pnpm", "you never run the linter"), never in a question or an "I always..." statement.
+Hebrew is matched on whole words after removing 1 to 3 prefix letters (ו ה ב כ ל מ ש): "שאמרתי לך"
+counts, "לאמר" does not. It prefers missing a vague correction to firing on a normal message. Off:
+`JARVIS_CORRECTION_CAPTURE=0`, or an empty file `<hub>/.correction-capture.off`;
+`JARVIS_CORRECTION_COOLDOWN=<prompts>` changes the pause.
+
+`violations:` is the count of corrections after a rule was already saved. A rising number means the
+rule is in the wrong place (a sentence in a note instead of a working rule). The record format is in
+`skills/memory-consolidation/references/record-format.md`.
+
+These two hooks are registered by the Claude Code plugin only; Codex and Cursor keep the plain
+memory load.
+
 ## Optional skills
 
 `playwright-cli`, `obsidian-markdown`, `obsidian-bases`, `json-canvas`,
@@ -328,7 +375,7 @@ Left out for license reasons, not quality ones:
 
 ```
 .claude-plugin/       plugin + marketplace manifests
-hooks/                startup script — injects hub MEMORY.md
+hooks/                startup script (injects hub MEMORY.md), memory check, correction-to-rule hook
 commands/             /jarvis-setup
 setup/                the temporary local setup page + its server
   profile.json        title, steps and finish text the page renders (an edition = a different profile)

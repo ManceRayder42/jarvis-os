@@ -3,6 +3,52 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- **Memory check** (`hooks/memory-check.mjs`, SessionStart). Once every 24 hours it looks through
+  the hub for things that went stale, writes `<hub>/reports/memory-check-YYYY-MM-DD.md`, and
+  prints one line: `[jarvis-os] memory check: N possibly-stale items -> <report> (ask me to fix them)`.
+  Silent when nothing is found. It never edits memory and never calls a model. Checks:
+  - paths in memory files that no longer exist (only unambiguous paths: absolute, `~/...` or a
+    drive letter; a path on a line that says moved, gone, archived, הועבר or נמחק is listed under
+    "Not counted", not reported);
+  - `MEMORY.md` lines that link to a missing file, and memory files with no index line;
+  - an optional `check:` line in a memory file's frontmatter, with a closed vocabulary:
+    `exists <path>`, `absent <path>`, `grep <path> <text>`. Nothing else is ever run; an unknown
+    verb is reported as such;
+  - `patterns.md` records past their `review` date or missing `claim`, `evidence` or `review`.
+  Stops scanning at about 150 ms and says "partial". Does nothing when no hub is set up. Off:
+  `JARVIS_MEMORY_CHECK=0` or an empty file `<hub>/.memory-check.off`. Manual run:
+  `node hooks/memory-check.mjs --force`.
+- **Correction to rule in one step** (`hooks/correction-capture.mjs`, UserPromptSubmit). When a
+  message sounds like a correction of Claude's behaviour, in Hebrew or English ("no, I said",
+  "stop doing", "don't ever", "לא, אמרתי", "תפסיק", "אל תוסיף", "שוב טעית"), one ~85 token
+  instruction is added to that turn: save a feedback rule in the hub now, bump `violations:` if the
+  rule already exists, and answer with one line ending "(say 'undo' to remove)". The only step for
+  the user is the correction already typed. Hebrew prefix letters (ו ה ב כ ל מ ש) are stripped only
+  when what is left is a whole term. Telegram `<channel>` prompts are unwrapped; other `<` prompts
+  and slash commands are skipped. At most once per 4 prompts per session. Fails open. Off:
+  `JARVIS_CORRECTION_CAPTURE=0` or an empty file `<hub>/.correction-capture.off`. Tune:
+  `JARVIS_CORRECTION_COOLDOWN=<prompts>`.
+- **`violations:` on records.** Feedback rules in the memory template carry `violations: 0`;
+  `patterns.md` records may carry `- violations: N`. It counts corrections AFTER the rule was in
+  place, separate from `count`. An accepted action flips `status` to `applied`.
+  `skills/memory-consolidation/references/record-format.md` is the format.
+- `working-rules.md` (new hubs) gains three lines on stale facts: check before you trust, fix with a
+  dated note, one rule per correction. About 120 tokens per session.
+- `test/memory-core.test.mjs` (26 tests, every hook run as a subprocess in a fake HOME) and
+  `test/fresh-install.sh` (no hub, empty hub, hub from `setup`, seeded hub). Correction fixtures,
+  Hebrew and English, in `test/fixtures/correction-fixtures.json`.
+
+### Known limits
+
+- The two hooks are registered for Claude Code only. Codex and Cursor still get the memory load; the
+  checker and the correction hook need a host adapter entry (`setup/` is untouched in this change).
+- Hubs created before this change keep their `working-rules.md` (nothing already there is
+  overwritten). The checker and the correction hook work without it.
+
 ## [0.5.0]
 
 ### Added

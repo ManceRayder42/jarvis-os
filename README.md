@@ -71,6 +71,22 @@ work session properly so nothing is forgotten, researching a topic with
 citations, or turning a long explanation into a simple visual page instead of
 a wall of text. [The full list](docs/details.md#the-full-skill-list) is in the details.
 
+## It keeps your memory honest
+
+A fact in memory (a path, a version, "this is broken") is true the day you write it, not forever.
+Twice you get help without doing anything:
+
+- **Stale facts are caught.** About once a day, at the start of a session, a quick check looks for
+  paths that no longer exist, index lines that point nowhere and files the index forgot. If it finds
+  something you see one line, and a report is written to `reports/` in your memory folder. Nothing
+  is changed until you say "fix them". Clean memory means silence.
+- **Corrections become rules.** Tell Claude "no, I said..." or "לא, אמרתי..." and it saves the rule
+  to your memory right then and says so in one line. Say "undo" and it is gone. The same correction
+  twice raises a counter on the same rule instead of making a second one.
+
+Both are on by default, take a few milliseconds, and never block a session. Switches and details:
+[Memory hygiene](docs/details.md#memory-hygiene).
+
 ## The one thing you have to remember
 
 **Say "done" (or type `/done`) when you finish working.**
