@@ -24,11 +24,18 @@ All notable changes to this project are documented here. Format follows
   `node hooks/memory-check.mjs --force`.
 - **Correction to rule in one step** (`hooks/correction-capture.mjs`, UserPromptSubmit). When a
   message sounds like a correction of Claude's behaviour, in Hebrew or English ("no, I said",
-  "stop doing", "don't ever", "לא, אמרתי", "תפסיק", "אל תוסיף", "שוב טעית"), one short
-  instruction (299 bytes, about 85 to 110 tokens) is added to that turn: save a feedback rule in the hub now, bump `violations:` if the
-  rule already exists, and answer with one line ending "(say 'undo' to remove)". The only step for
-  the user is the correction already typed. Hebrew prefix letters (ו ה ב כ ל מ ש) are stripped only
-  when what is left is a whole term. Telegram `<channel>` prompts are unwrapped; other `<` prompts
+  "stop doing that", "don't ever", "לא, אמרתי", "תפסיק", "לא, אל תשנה", "שוב טעית"), one short
+  instruction (214 bytes, about 60 to 80 tokens) is added to that turn: save a feedback rule in the
+  hub now, bump `violations:` if the rule already exists, and answer with one line ending
+  "(say 'undo' to remove)". The only step for the user is the correction already typed.
+  Precision rules, tuned on a replay of 1760 real prompts (35% of fires were real corrections
+  before, 100% on that sample after): "I told/asked you" and "אמרתי לך / ביקשתי ממך" count only
+  when the clause starts there ("the folder that I asked you to" and "הפירוט שביקשתי ממך" are
+  references); a plain negative imperative ("אל תשנה כלום", "stop opening tabs") is an instruction
+  and fires only next to a marker (לא, שוב, כבר, again, please, "I repeat"); text inside
+  `<pasted_content>` is never read; always/never/תמיד/אף פעם need a directive in a message of at
+  most 200 characters. Hebrew prefix letters (ו ה ב כ ל מ ש) are stripped only
+  when what is left is a whole term (אמרתי and ביקשתי take only ו). Telegram `<channel>` prompts are unwrapped; other `<` prompts
   and slash commands are skipped. At most once per 4 prompts per session. Fails open. Off:
   `JARVIS_CORRECTION_CAPTURE=0` or an empty file `<hub>/.correction-capture.off`. Tune:
   `JARVIS_CORRECTION_COOLDOWN=<prompts>`.

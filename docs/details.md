@@ -127,13 +127,17 @@ empty file `<hub>/.memory-check.off`. Run it by hand, ignoring the 24-hour limit
 
 **Corrections become rules** (`hooks/correction-capture.mjs`, on every prompt you send). If your
 message sounds like a correction ("no, I said...", "I told you", "don't ever", "stop doing",
-"wrong again", "לא, אמרתי", "אמרתי לך", "אל תוסיף", "תפסיק", "שוב טעית"), one short instruction is
-added for that turn (299 bytes, about 85 to 110 tokens, once per 4 prompts at most): save a feedback rule in your
+"wrong again", "לא, אמרתי", "אמרתי לך", "לא, אל תשנה", "תפסיק", "שוב טעית"), one short instruction
+is added for that turn (214 bytes, about 60 to 80 tokens, once per 4 prompts at most): save a feedback rule in your
 memory folder, or add 1 to `violations:` if the rule exists, and reply "Saved as a rule: ... (say
 'undo' to remove)". Words like "always" and "never" count only inside an instruction ("always use
 pnpm", "you never run the linter"), never in a question or an "I always..." statement.
-Hebrew is matched on whole words after removing 1 to 3 prefix letters (ו ה ב כ ל מ ש): "שאמרתי לך"
-counts, "לאמר" does not. It prefers missing a vague correction to firing on a normal message. Off:
+A reference does not count: "the folder that I asked you to", "הפירוט שביקשתי ממך" point back at an
+old request. A plain order ("אל תשנה כלום", "stop opening tabs") is an instruction, and counts only
+next to a marker such as "לא,", "שוב", "again", "please" or "I repeat". Text inside pasted blocks
+is never read. Hebrew is matched on whole words after removing 1 to 3 prefix letters
+(ו ה ב כ ל מ ש): "לאמר" is not "אמרתי", and "שאמרתי לך" (a relative clause) is quiet while
+"ואמרתי לך" counts. It prefers missing a vague correction to firing on a normal message. Off:
 `JARVIS_CORRECTION_CAPTURE=0`, or an empty file `<hub>/.correction-capture.off`;
 `JARVIS_CORRECTION_COOLDOWN=<prompts>` changes the pause.
 
