@@ -57,8 +57,8 @@ en=$(hook UserPromptSubmit "$(prompt 'No, I said use tabs' s3)")
 he=$(hook UserPromptSubmit "$(prompt 'לא, אמרתי שצריך טאבים' s4)")
 no=$(hook UserPromptSubmit "$(prompt 'please add a README section' s5)")
 check "correction hook exit 0" "rc_ok"
-check "English correction -> one rule instruction" "[ \"\$(printf '%s\\n' \"\$en\" | grep -c '')\" = 1 ] && printf '%s' \"\$en\" | grep -q 'save a rule now'"
-check "Hebrew correction -> one rule instruction" "printf '%s' \"\$he\" | grep -q 'save a rule now'"
+check "English correction -> one rule instruction" "[ \"\$(printf '%s\\n' \"\$en\" | grep -c '')\" = 1 ] && printf '%s' \"\$en\" | grep -q 'If this corrects you'"
+check "Hebrew correction -> one rule instruction" "printf '%s' \"\$he\" | grep -q 'If this corrects you'"
 check "ordinary prompt -> silence" "[ -z \"\$no\" ]"
 check "memory files unchanged by every hook" "[ \"\$(cd $T/nest && find . -type f -not -name '.memory-check-stamp' -not -path './reports/*' | sort | xargs cat | cksum)\" = '$snap' ]"
 

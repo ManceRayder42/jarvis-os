@@ -232,7 +232,9 @@ test('correction fixtures: every fires_on fires, every quiet_on is quiet (Hebrew
 });
 
 test('correction: Hebrew prefix traps', () => {
-  assert.ok(detectCorrection('שאמרתי לך לא לגעת'), 'ש + אמרתי fires');
+  assert.equal(detectCorrection('שאמרתי לך לא לגעת'), null, 'ש + אמרתי is a relative clause (a reference), not a complaint');
+  assert.equal(detectCorrection('הדבר שביקשתי ממך'), null, 'ש + ביקשתי likewise');
+  assert.ok(detectCorrection('ואמרתי לך לא לגעת'), 'ו + אמרתי is a new clause: fires');
   assert.ok(detectCorrection('ולא אמרתי'), 'ו + לא fires');
   assert.equal(detectCorrection('הוא רצה לאמר משהו'), null, 'לאמר is not לא + אמרתי');
   assert.equal(detectCorrection('זה תמידי'), null, 'תמידי is a different word');
@@ -249,6 +251,32 @@ test('correction: weak terms need a directive, a short message and no question; 
   assert.ok(detectCorrection('no, I said stop. ' + 'x'.repeat(2000)), 'strong term in the head of a long message still fires');
 });
 
+test('correction: "I told/asked you" fires only when the clause starts there; stop and אל need a marker', () => {
+  for (const t of ['I told you to stop.', 'No. I asked you to use tabs.', 'Okay, now I asked you to list them', 'Yes, I asked you for X', 'It is wrong, I told you so']) assert.ok(detectCorrection(t), t);
+  for (const t of ['the file that I asked you to edit', 'what I told you', 'the codeword I told you', 'everything I asked you about']) assert.equal(detectCorrection(t), null, t);
+  assert.ok(detectCorrection('Please stop pressing keys'));
+  assert.ok(detectCorrection('Can you stop pressing keys?'));
+  assert.ok(detectCorrection('Stop doing that.'));
+  assert.equal(detectCorrection('Stop pressing keys.'), null, 'a bare imperative is an instruction');
+  assert.ok(detectCorrection('Stop pressing keys again.'));
+  assert.equal(detectCorrection('אל תשנה כלום'), null);
+  assert.ok(detectCorrection('לא, אל תשנה'));
+  assert.ok(detectCorrection('שוב אל תשנה את זה'));
+  assert.ok(detectCorrection('אל תשנה, כבר אמרתי'));
+  assert.equal(detectCorrection('ואל תשנה כלום ואל תמחק קבצים'), null);
+  assert.equal(detectCorrection('You can always use the other model.'), null);
+  assert.equal(detectCorrection('Always use tabs. ' + 'x'.repeat(250)), null, 'weak terms: 200 characters at most');
+  assert.ok(detectCorrection('lets go. Not what I want.'));
+});
+
+test('pasted_content blocks are never read; the text around them is', () => {
+  assert.equal(unwrapPrompt('merge it <pasted_content id="a">no, I said stop</pasted_content>'), 'merge it');
+  assert.equal(unwrapPrompt('<channel source="plugin:telegram:telegram">ok <pasted_content>no, I said stop</pasted_content></channel>'), 'ok');
+  assert.equal(unwrapPrompt('<pasted_content>only a paste</pasted_content>'), null);
+  assert.equal(detectCorrection('fine <pasted_content>no, I said stop</pasted_content>'), null);
+  assert.ok(detectCorrection('no, I said stop <pasted_content>x</pasted_content>'));
+});
+
 test('unwrapPrompt: Telegram channel tag is unwrapped, other < prompts and slash commands are skipped', () => {
   assert.equal(unwrapPrompt('<channel source="plugin:telegram:telegram" chat_id="5" ts="t">hello there</channel>'), 'hello there');
   assert.equal(unwrapPrompt('<channel source="plugin:telegram:telegram">a</channel>\n<channel source="plugin:telegram:telegram">b</channel>'), 'a\nb');
@@ -262,9 +290,9 @@ test('unwrapPrompt: Telegram channel tag is unwrapped, other < prompts and slash
 
 test('correction: the injected line is short, plugin-built, and carries no prompt text', () => {
   const line = buildInstruction('/Users/someone/jarvis-hub', '/Users/someone');
-  assert.ok(Buffer.byteLength(line) <= 320, 'bytes: ' + Buffer.byteLength(line));
+  assert.ok(Buffer.byteLength(line) <= 215, 'bytes: ' + Buffer.byteLength(line));
   assert.match(line, /~\/jarvis-hub\/feedback_<slug>\.md/);
-  for (const must of ['violations', "'undo'", 'Saved as a rule', 'MEMORY.md', 'my language']) assert.ok(line.includes(must), must);
+  for (const must of ['violations: 0', 'violations +1', "'undo'", 'Saved as a rule', 'index line', 'type: feedback', 'Why', 'How to apply']) assert.ok(line.includes(must), must);
   assert.equal((line.match(/\n/g) || []).length, 1);
 });
 
@@ -313,9 +341,9 @@ test('fresh install 3/4, template hub: checker silent, memory untouched, correct
   for (const text of ['No, I said use tabs', 'לא, אמרתי שצריך טאבים']) {
     const r = run('correction-capture.mjs', e, prompt(text));
     assert.equal(r.code, 0);
-    assert.match(r.out, /^\[jarvis-os\] If this corrects you, save a rule now: .*jarvis-hub\/feedback_<slug>\.md/);
+    assert.match(r.out, /^\[jarvis-os\] If this corrects you: save ~\/jarvis-hub\/feedback_<slug>\.md/);
     assert.match(r.out, /violations/);
-    assert.ok(Buffer.byteLength(r.out) <= 340, 'bytes ' + Buffer.byteLength(r.out));
+    assert.ok(Buffer.byteLength(r.out) <= 215, 'bytes ' + Buffer.byteLength(r.out));
   }
   assert.equal(run('correction-capture.mjs', e, prompt('Please add a README section')).out, '');
   assert.deepEqual(snapshot(hub), before, 'no hook edits memory');
