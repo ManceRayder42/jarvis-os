@@ -49,8 +49,25 @@ All notable changes to this project are documented here. Format follows
   `test/fresh-install.sh` (no hub, empty hub, hub from `setup`, seeded hub). Correction fixtures,
   Hebrew and English, in `test/fixtures/correction-fixtures.json`.
 
+- **`memory-setup` skill** (`skills/memory-setup/`). "Set up memory" / "תגדיר זיכרון" builds the whole
+  memory system for a fresh user with one script (`scripts/memory-setup.mjs`, Node stdlib only):
+  a marked block `<!-- shufi-memory:begin v1 -->` in the user-level `CLAUDE.md` (about 450 bytes,
+  about 110 tokens per session, pointer lines "MUST read ... before ..."), `<hub>/knowledge/`
+  (README, index, `memory-conventions.md`), `<hub>/raw/` and `<hub>/wiki/` with READMEs and a wiki
+  index, the memory index seeded from `memory-template/` for a hub with no `MEMORY.md`. Detects
+  `qmd` and prints the optional index command (installs nothing). Verifies that the memory-check and
+  correction-capture hooks are wired, runs the checker once read-only, and prints the kill switches.
+  Zero config (works with no env and an empty home), idempotent (a second run prints "Nothing to do"
+  and changes no file), never overwrites a user file (existing files are reported as "exists, left as
+  is"; an existing `CLAUDE.md` keeps every byte outside the block and is backed up once as
+  `CLAUDE.md.shufi-bak`), `--dry-run` writes nothing, `--lang he|en`. Tests: `test/memory-setup.test.mjs`
+  (21) and section 5 of `test/fresh-install.sh`.
+
 ### Known limits
 
+- `memory-setup` ships in `skills/` and is on by default, but it is not listed in `setup/skills-catalog.json`
+  (`setup/` is untouched in this change), so the setup page does not show it and the "21 skills" badge
+  does not count it.
 - The two hooks are registered for Claude Code only. Codex and Cursor still get the memory load; the
   checker and the correction hook need a host adapter entry (`setup/` is untouched in this change).
 - Hubs created before this change keep their `working-rules.md` (nothing already there is

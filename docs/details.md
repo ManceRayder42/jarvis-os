@@ -375,6 +375,37 @@ Left out for license reasons, not quality ones:
   protected, reachable only from your own computer, and it shuts itself
   down.
 
+## Memory setup
+
+Skill `memory-setup` (say "set up memory" or "תגדיר זיכרון"). One deterministic script,
+`skills/memory-setup/scripts/memory-setup.mjs`, does all the file work; the skill only runs it and
+relays the summary. Node standard library only, no network, nothing installed, always exits 0.
+
+```
+node skills/memory-setup/scripts/memory-setup.mjs [--lang he|en] [--dry-run] [--hub <dir>]
+```
+
+| Step | What it does | If it already exists |
+|---|---|---|
+| Hub | Uses `--hub`, else `JARVIS_HUB`, else `~/.jarvis-hub-path`, else `~/jarvis-hub`. For the last two defaults it writes `~/.jarvis-hub-path` so the session hook finds the hub. | left as is |
+| Memory | Hub with no `MEMORY.md`: copies `memory-template/` (index, working rules, three examples with `violations:`). | a hub that has a `MEMORY.md` gets no seed files |
+| Knowledge pack | `<hub>/knowledge/README.md` (pack convention: index spine, load-on-demand files, source and evidence tier per claim), `index.md` (router), `memory-conventions.md` (one fact per file, index line, feedback rule with `violations:`, stale facts). | each file skipped, "exists, left as is" |
+| Wiki | `<hub>/raw/README.md` (inbox), `<hub>/wiki/README.md`, `<hub>/wiki/index.md`. Same layout the `wiki-article` skill writes to. | same |
+| Layered CLAUDE.md | `~/.claude/CLAUDE.md` (or `$CLAUDE_CONFIG_DIR/CLAUDE.md`): a marked block `<!-- shufi-memory:begin v1 -->` ... `<!-- shufi-memory:end -->` of about 450 bytes (about 110 tokens per session): the hub path, one "MUST read `knowledge/index.md` before a subject task" pointer, the correction rule, the stale-fact rule. | file missing: created. No block: appended at the end; everything before it stays byte for byte, and the original is saved once as `CLAUDE.md.shufi-bak`. Block present and current: no change. Block present but different (hub moved): only the block is refreshed. Damaged or duplicated markers, or a block from a newer version: left alone and reported. |
+| qmd | Looks for `qmd` on PATH. Found: prints `qmd collection add <hub> --name memory && qmd embed`. Missing: prints `npm install -g @tobilu/qmd`. Never runs either. | always printed |
+| Memory check | Verifies `hooks/memory-check.mjs` is registered under SessionStart in `plugin.json`, then runs the checker once, read-only (no stamp, no report), and prints "clean" or the number of stale-looking items. | always printed |
+| Correction capture | Verifies `hooks/correction-capture.mjs` is registered under UserPromptSubmit and prints the kill switch (`<hub>/.correction-capture.off`) and the one-step use: correct Claude, say "undo" to remove the rule. | always printed |
+
+Files are created with an exclusive-create write, so a file that appears between the check and the
+write is never overwritten. `--dry-run` writes nothing, not even the pointer file or a folder. The
+output language is `--lang`, else `JARVIS_LANG`, else `LC_ALL` / `LANG` (a value starting with `he`
+means Hebrew), else English; the seeded README and index files follow it too, their frontmatter keys
+stay English. The CLAUDE.md block is English in every language (it is an instruction to the model,
+and one text means a run in another language never rewrites it).
+
+Remove it: delete the lines from `<!-- shufi-memory:begin v1 -->` to `<!-- shufi-memory:end -->`
+in your `CLAUDE.md`. The hub folders are yours and stay.
+
 ## Repo layout
 
 ```
@@ -385,7 +416,7 @@ setup/                the temporary local setup page + its server
   profile.json        title, steps and finish text the page renders (an edition = a different profile)
   tools-catalog.json  the Tools step: what each tool is, how to detect, install or connect it
   agent.mjs           the same setup, as commands an agent can run (see AGENTS.md)
-skills/               the default-on shipped skills
+skills/               the default-on shipped skills (memory-setup builds the memory system for a new user)
 optional-skills/      skills switched into skills/ on demand — see "Optional skills"
 memory-template/      seed hub: MEMORY.md index + example memory files
 bridge/               opt-in Telegram phone assistant — see bridge/README.md

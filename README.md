@@ -87,6 +87,16 @@ Twice you get help without doing anything:
 Both are on by default, finish well under 200 ms, and never block a session. Switches and details:
 [Memory hygiene](docs/details.md#memory-hygiene).
 
+## One command builds the whole memory system
+
+Say **"set up memory"** (or "תגדיר זיכרון") and Claude runs `memory-setup`. From an empty computer it
+creates, and only what is missing: a short block in your `~/.claude/CLAUDE.md` that points at your
+notes, a `knowledge/` folder (pack convention + index), a `raw/` inbox and a `wiki/` with an index,
+the memory index with its rules, and it checks that the two hygiene hooks above are wired. It never
+overwrites a file you wrote: in an existing `CLAUDE.md` it only touches its own marked block.
+Run it again any time: it says "nothing to do". `--dry-run` shows the plan without writing.
+Details: [Memory setup](docs/details.md#memory-setup).
+
 ## The one thing you have to remember
 
 **Say "done" (or type `/done`) when you finish working.**
