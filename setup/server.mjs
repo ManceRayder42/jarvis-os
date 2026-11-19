@@ -297,8 +297,30 @@ function readBody(req) {
 
 function serveIndex(res) {
   const html = PAGE_TEMPLATE.replace('__JARVIS_TOKEN__', TOKEN);
-  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  // The page is one inline document that talks only to this server and loads only
+  // this server's own files. The policy makes that a rule the browser enforces
+  // rather than a habit: no font, script, image or request can leave the machine.
+  res.writeHead(200, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store',
+    'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  });
   res.end(html);
+}
+
+// The page's owl poses live next to the page as files, not as base64 inside it.
+// The route is a filename allowlist (lowercase letters, digits, dashes, .webp
+// only), never a path join, so nothing outside setup/assets/shufi/ can be named.
+// Like every other route it sits behind the origin and token checks, so the page
+// asks for these with its own token on the query string.
+const ASSET_DIR = path.join(__dirname, 'assets', 'shufi');
+function serveAsset(res, name) {
+  const file = path.join(ASSET_DIR, name + '.webp');
+  fs.readFile(file, (err, data) => {
+    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('not found'); }
+    res.writeHead(200, { 'Content-Type': 'image/webp', 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' });
+    res.end(data);
+  });
 }
 
 function serveState(res) {
@@ -963,6 +985,8 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (req.method === 'GET' && url.pathname === '/') return serveIndex(res);
+    const asset = req.method === 'GET' && /^\/assets\/shufi\/([a-z0-9-]+)\.webp$/.exec(url.pathname);
+    if (asset) return serveAsset(res, asset[1]);
     if (req.method === 'GET' && url.pathname === '/api/state') return serveState(res);
     if (req.method === 'GET' && url.pathname === '/api/preflight') {
       // ?refresh=1 re-runs every check live (a few subprocess spawns, tens
