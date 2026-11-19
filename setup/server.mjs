@@ -913,7 +913,9 @@ async function materializeSkill(skillId, enabled) {
 // declares a `detect` key, whether its precondition currently holds.
 function handleSkillsList(req, res) {
   const skills = SKILLS_CATALOG.map((s) => {
-    const enabled = fs.existsSync(path.join(PLUGIN_ROOT, 'skills', s.id));
+    // A recommended external install (`install` array) has no directory here:
+    // it is never "enabled" from this server, the page shows its commands.
+    const enabled = !s.install && fs.existsSync(path.join(PLUGIN_ROOT, 'skills', s.id));
     const preconditionMet = s.detect === 'obsidian' ? detectObsidian().present : null;
     return { ...s, enabled, precondition_met: preconditionMet };
   });
@@ -936,6 +938,9 @@ async function handleSkillsSet(req, res) {
   const entry = SKILLS_CATALOG.find((s) => s.id === id);
   if (!entry) {
     return sendJSON(res, 400, { ok: false, error: 'unknown skill id: ' + id });
+  }
+  if (entry.install) {
+    return sendJSON(res, 400, { ok: false, error: 'this one is installed from its own source, not switched on here: ' + entry.install.join(' ; ') });
   }
 
   const result = await materializeSkill(id, enabled);
@@ -1061,7 +1066,7 @@ async function handleSetupAll(req, res) {
 
   const enabled = [];
   const failed = [];
-  for (const skill of SKILLS_CATALOG.filter((sk) => sk.default)) {
+  for (const skill of SKILLS_CATALOG.filter((sk) => sk.default && !sk.install)) {
     const dir = path.join(PLUGIN_ROOT, 'skills', skill.id);
     if (fs.existsSync(dir)) { enabled.push(skill.id); continue; }
     try {

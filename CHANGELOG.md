@@ -7,6 +7,12 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **Animation group and Modern Web Guidance on the Skills step.** Six
+  recommended animation installs (GSAP, Motion, motion design principles, Rive,
+  Three.js, Impeccable animate) and Google Chrome's Modern Web Guidance (Design
+  group), each with its upstream install command to copy. New optional
+  `install` array in `setup/skills-catalog.json`: such rows have no switch and
+  are never enabled or toggled by the server.
 - **Codex CLI and Cursor.** `node setup/agent.mjs install-host codex|cursor`
   connects either host to the same memory folder, skills and tool list:
   - Codex: a `SessionStart` hook (matcher `startup|resume|clear`) in

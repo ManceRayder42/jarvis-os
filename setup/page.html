@@ -343,8 +343,9 @@ function stepStatus(id) {
       return made ? { s: 'ok', line: shortPath(state.cfg.hub) } : { s: 'idle', line: 'Not created yet' };
     }
     case 'skills': {
-      const on = state.skills.filter((s) => s.enabled).length;
-      return on ? { s: 'ok', line: on + ' of ' + state.skills.length + ' on' } : { s: 'idle', line: 'None on yet' };
+      const own = state.skills.filter((s) => !s.install);
+      const on = own.filter((s) => s.enabled).length;
+      return on ? { s: 'ok', line: on + ' of ' + own.length + ' on' } : { s: 'idle', line: 'None on yet' };
     }
     case 'tools': {
       const list = generalTools();
@@ -602,11 +603,19 @@ const VIEWS = {
 
     const groups = {};
     state.skills.forEach((s) => { (groups[s.category || 'other'] ||= []).push(s); });
-    const NAMES = { design: 'Design', core: 'Everyday', research: 'Research', media: 'Media', dev: 'Building', obsidian: 'Obsidian', team: 'Team' };
+    const NAMES = { design: 'Design', animation: 'Animation', core: 'Everyday', research: 'Research', media: 'Media', dev: 'Building', obsidian: 'Obsidian', team: 'Team' };
     Object.entries(groups).sort(([a], [b]) => (b === 'design') - (a === 'design')).forEach(([cat, list]) => {
       out.push(el('div', { className: 'section-label', textContent: NAMES[cat] || cat }));
       const box = el('div', { className: 'list' });
       list.forEach((s) => {
+        if (s.install) {
+          // Recommended external install: nothing to switch on here, just the upstream commands.
+          const r = row('', s.name, s.description, s.url ? el('a', { href: s.url, target: '_blank', rel: 'noopener', textContent: 'About', className: 'note', style: 'margin:0' }) : null);
+          s.install.forEach((c) => r.querySelector('.grow').append(copyCmd(c)));
+          if (s.details) r.title = s.details;
+          box.append(r);
+          return;
+        }
         const blocked = s.precondition_met === false;
         const msg = el('div', { className: 'msg bad' });
         const toggle = sw(s.enabled, blocked, async (i) => {
