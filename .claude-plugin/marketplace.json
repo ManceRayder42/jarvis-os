@@ -12,7 +12,7 @@
       "description": "A persistent memory hub that loads into every session from any directory, plus a curated set of research and workflow skills.",
       "source": "./",
       "category": "productivity",
-      "version": "0.5.0"
+      "version": "0.6.0"
     }
   ]
 }
