@@ -128,7 +128,7 @@ empty file `<hub>/.memory-check.off`. Run it by hand, ignoring the 24-hour limit
 **Corrections become rules** (`hooks/correction-capture.mjs`, on every prompt you send). If your
 message sounds like a correction ("no, I said...", "I told you", "don't ever", "stop doing",
 "wrong again", "לא, אמרתי", "אמרתי לך", "אל תוסיף", "תפסיק", "שוב טעית"), one short instruction is
-added for that turn (about 85 tokens, once per 4 prompts at most): save a feedback rule in your
+added for that turn (299 bytes, about 85 to 110 tokens, once per 4 prompts at most): save a feedback rule in your
 memory folder, or add 1 to `violations:` if the rule exists, and reply "Saved as a rule: ... (say
 'undo' to remove)". Words like "always" and "never" count only inside an instruction ("always use
 pnpm", "you never run the linter"), never in a question or an "I always..." statement.

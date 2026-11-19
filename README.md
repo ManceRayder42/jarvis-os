@@ -84,7 +84,7 @@ Twice you get help without doing anything:
   to your memory right then and says so in one line. Say "undo" and it is gone. The same correction
   twice raises a counter on the same rule instead of making a second one.
 
-Both are on by default, take a few milliseconds, and never block a session. Switches and details:
+Both are on by default, finish well under 200 ms, and never block a session. Switches and details:
 [Memory hygiene](docs/details.md#memory-hygiene).
 
 ## The one thing you have to remember

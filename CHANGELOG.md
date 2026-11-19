@@ -24,8 +24,8 @@ All notable changes to this project are documented here. Format follows
   `node hooks/memory-check.mjs --force`.
 - **Correction to rule in one step** (`hooks/correction-capture.mjs`, UserPromptSubmit). When a
   message sounds like a correction of Claude's behaviour, in Hebrew or English ("no, I said",
-  "stop doing", "don't ever", "לא, אמרתי", "תפסיק", "אל תוסיף", "שוב טעית"), one ~85 token
-  instruction is added to that turn: save a feedback rule in the hub now, bump `violations:` if the
+  "stop doing", "don't ever", "לא, אמרתי", "תפסיק", "אל תוסיף", "שוב טעית"), one short
+  instruction (299 bytes, about 85 to 110 tokens) is added to that turn: save a feedback rule in the hub now, bump `violations:` if the
   rule already exists, and answer with one line ending "(say 'undo' to remove)". The only step for
   the user is the correction already typed. Hebrew prefix letters (ו ה ב כ ל מ ש) are stripped only
   when what is left is a whole term. Telegram `<channel>` prompts are unwrapped; other `<` prompts
@@ -37,8 +37,8 @@ All notable changes to this project are documented here. Format follows
   place, separate from `count`. An accepted action flips `status` to `applied`.
   `skills/memory-consolidation/references/record-format.md` is the format.
 - `working-rules.md` (new hubs) gains three lines on stale facts: check before you trust, fix with a
-  dated note, one rule per correction. About 120 tokens per session.
-- `test/memory-core.test.mjs` (26 tests, every hook run as a subprocess in a fake HOME) and
+  dated note, one rule per correction. About 120 to 150 tokens per session.
+- `test/memory-core.test.mjs` (27 tests, every hook run as a subprocess in a fake HOME) and
   `test/fresh-install.sh` (no hub, empty hub, hub from `setup`, seeded hub). Correction fixtures,
   Hebrew and English, in `test/fixtures/correction-fixtures.json`.
 
