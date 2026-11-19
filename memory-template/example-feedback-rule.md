@@ -3,6 +3,7 @@ name: example-feedback-rule
 description: Placeholder feedback memory — replace with a real behavioral correction or confirmed approach
 metadata:
   type: feedback
+  violations: 0
 ---
 
 This is a placeholder. A `feedback` memory records guidance you've given
@@ -18,5 +19,10 @@ seconds and catches the same regressions for local commits.
 
 **How to apply:** default to `go test ./affected/...`; run the full suite
 only when explicitly asked or right before opening a PR.
+
+**violations:** how many times you had to correct Claude on this rule after
+it was saved. A repeat correction adds 1 here instead of creating a second
+file. A rising number means the rule is not working where it sits: promote
+it, for example into `working-rules.md`.
 
 Delete this file (and its line in MEMORY.md) once you've written your own.
