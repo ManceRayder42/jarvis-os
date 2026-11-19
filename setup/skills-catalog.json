@@ -1,5 +1,5 @@
 {
-  "_comment": "Per-skill install catalog for the /jarvis-setup page. One entry per skill the plugin can install individually (replaces the old core/research/media category toggles). Every license/author claim here was checked against a primary source (a local LICENSE file, or upstream raw.githubusercontent.com/<owner>/<repo>/<branch>/LICENSE) -- never a README claim or blog post. See setup/server.mjs's report-back for the exact sources read. `id` must match the skill's directory name under skills/ (or optional-skills/ when disabled). Entries that carry an `install` array (animation bundle, Modern Web Guidance) are RECOMMENDED EXTERNAL installs: no directory under skills/ or optional-skills/, no toggle on the page, only copyable upstream install commands. Their license was read from the upstream LICENSE file unless the entry's `note` says otherwise. Their `id` therefore does not map to a directory.",
+  "_comment": "Per-skill install catalog for the /jarvis-setup page. One entry per skill the plugin can install individually (replaces the old core/research/media category toggles). Every license/author claim here was checked against a primary source (a local LICENSE file, or upstream raw.githubusercontent.com/<owner>/<repo>/<branch>/LICENSE) -- never a README claim or blog post. See setup/server.mjs's report-back for the exact sources read. `id` must match the skill's directory name under skills/ (or optional-skills/ when disabled). Entries that carry an `install` array (animation bundle, Modern Web Guidance) are RECOMMENDED EXTERNAL installs: no directory under skills/ or optional-skills/, no toggle on the page, only copyable upstream install commands. Their license was read from the upstream LICENSE file unless the entry's `note` says otherwise. Their `id` therefore does not map to a directory. Optional `subgroup` (e.g. \"animation\" under category \"design\") nests a row as a sub-branch inside its category on the setup page; the category must also have at least one row without a subgroup.",
   "skills": [
     {
       "id": "shufi-design",
@@ -46,7 +46,8 @@
       "requires_tool": null,
       "detect": null,
       "default": false,
-      "category": "animation",
+      "category": "design",
+      "subgroup": "animation",
       "install": [
         "npx skills add https://github.com/greensock/gsap-skills"
       ],
@@ -64,7 +65,8 @@
       "requires_tool": null,
       "detect": null,
       "default": false,
-      "category": "animation",
+      "category": "design",
+      "subgroup": "animation",
       "install": [
         "npx motion-ai"
       ],
@@ -81,7 +83,8 @@
       "requires_tool": null,
       "detect": null,
       "default": false,
-      "category": "animation",
+      "category": "design",
+      "subgroup": "animation",
       "install": [
         "npx skills add LottieFiles/motion-design-skill"
       ],
@@ -98,7 +101,8 @@
       "requires_tool": null,
       "detect": null,
       "default": false,
-      "category": "animation",
+      "category": "design",
+      "subgroup": "animation",
       "install": [
         "claude plugin marketplace add rive-app/skills",
         "claude plugin install rive@rive"
@@ -117,7 +121,8 @@
       "requires_tool": null,
       "detect": null,
       "default": false,
-      "category": "animation",
+      "category": "design",
+      "subgroup": "animation",
       "install": [
         "npx skills add cloudai-x/threejs-skills"
       ],
@@ -135,7 +140,8 @@
       "requires_tool": null,
       "detect": null,
       "default": false,
-      "category": "animation",
+      "category": "design",
+      "subgroup": "animation",
       "install": [
         "npx impeccable install"
       ],

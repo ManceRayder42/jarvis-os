@@ -7,10 +7,12 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
-- **Animation group and Modern Web Guidance on the Skills step.** Six
+- **Animation branch under Design, and Modern Web Guidance, on the Skills step.** Six
   recommended animation installs (GSAP, Motion, motion design principles, Rive,
   Three.js, Impeccable animate) and Google Chrome's Modern Web Guidance (Design
-  group), each with its upstream install command to copy. New optional
+  group), each with its upstream install command to copy. Animation is a
+  sub-branch of Design: new optional `subgroup` field on a catalog row, drawn
+  as an indented branch under its category. New optional
   `install` array in `setup/skills-catalog.json`: such rows have no switch and
   are never enabled or toggled by the server.
 - **Codex CLI and Cursor.** `node setup/agent.mjs install-host codex|cursor`

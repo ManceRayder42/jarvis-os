@@ -134,12 +134,17 @@ button { font: inherit; color: inherit; }
 .section-label { margin: 26px 0 10px; font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }
 
 /* ---- rows ---------------------------------------------------------------- */
-.list { display: grid; gap: 8px; }
+.list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .row { display: flex; align-items: center; gap: 14px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px;
   background: var(--sunk); }
 .row .grow { flex: 1; min-width: 0; }
 .row .name { font-weight: 500; color: var(--ink-strong); }
 .row .meta { font-size: 13px; color: var(--ink-muted); overflow-wrap: anywhere; }
+.row .grow .cmd + .cmd { margin-top: 6px; }
+.branch { position: relative; margin: 14px 0 0 18px; padding-left: 18px; border-left: 2px solid var(--line-strong); }
+.branch::before { content: ''; position: absolute; left: -2px; top: -14px; height: 14px; border-left: 2px solid var(--line-strong); }
+.branch .section-label { margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+.branch .section-label::before { content: ''; width: 12px; border-top: 2px solid var(--line-strong); margin-left: -18px; }
 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: rgba(148,163,184,.4); }
 .dot.ok { background: var(--accent); } .dot.warn { background: var(--ink-muted); } .dot.bad { background: var(--bad); }
 
@@ -190,7 +195,7 @@ input::placeholder { color: #7c8aa0; }
 
 .cmd { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; border-radius: 10px; border: 1px dashed var(--line-strong);
   background: var(--sunk); font: 12.5px var(--mono); color: var(--ink-soft); }
-.cmd code { flex: 1; overflow-x: auto; white-space: nowrap; }
+.cmd code { min-width: 0; flex: 1; overflow-x: auto; white-space: nowrap; }
 .note { font-size: 13px; color: var(--ink-muted); margin: 10px 0 0; }
 .callout { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--sunk); color: var(--ink-soft); font-size: 14px; }
 .callout b { color: var(--ink-strong); }
@@ -220,6 +225,10 @@ summary { cursor: pointer; color: var(--ink-soft); font-size: 13.5px; }
   .num { width: 26px; height: 26px; }
   .card { padding: 20px 16px; min-height: 0; }
   .row { flex-wrap: wrap; }
+  .row .grow:has(.cmd) { flex: 1 1 100%; }
+  .row .grow .cmd code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .branch { margin-left: 6px; padding-left: 12px; }
+  .branch .section-label::before { margin-left: -12px; width: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -603,11 +612,12 @@ const VIEWS = {
 
     const groups = {};
     state.skills.forEach((s) => { (groups[s.category || 'other'] ||= []).push(s); });
-    const NAMES = { design: 'Design', animation: 'Animation', core: 'Everyday', research: 'Research', media: 'Media', dev: 'Building', obsidian: 'Obsidian', team: 'Team' };
+    const NAMES = { design: 'Design', core: 'Everyday', research: 'Research', media: 'Media', dev: 'Building', obsidian: 'Obsidian', team: 'Team' };
+    const SUBNAMES = { animation: 'Animation' };
     Object.entries(groups).sort(([a], [b]) => (b === 'design') - (a === 'design')).forEach(([cat, list]) => {
       out.push(el('div', { className: 'section-label', textContent: NAMES[cat] || cat }));
       const box = el('div', { className: 'list' });
-      list.forEach((s) => {
+      const addSkill = (box, s) => {
         if (s.install) {
           // Recommended external install: nothing to switch on here, just the upstream commands.
           const r = row('', s.name, s.description, s.url ? el('a', { href: s.url, target: '_blank', rel: 'noopener', textContent: 'About', className: 'note', style: 'margin:0' }) : null);
@@ -631,6 +641,19 @@ const VIEWS = {
         if (s.details) r.title = s.details;
         box.append(r);
         if (s.enabled) (s.requires || []).forEach((k) => box.append(secretField(k, k + ' — needed by ' + s.name)));
+      };
+      // Rows with a `subgroup` hang as a branch under their category (Design > Animation).
+      list.filter((s) => !s.subgroup).forEach((s) => addSkill(box, s));
+      const subs = {};
+      list.filter((s) => s.subgroup).forEach((s) => { (subs[s.subgroup] ||= []).push(s); });
+      Object.entries(subs).forEach(([sub, subList]) => {
+        const branch = el('div', { className: 'branch' },
+          el('div', { className: 'section-label', textContent: SUBNAMES[sub] || sub }));
+        branch.dataset.branch = sub;
+        const subBox = el('div', { className: 'list' });
+        subList.forEach((s) => addSkill(subBox, s));
+        branch.append(subBox);
+        box.append(branch);
       });
       out.push(box);
     });

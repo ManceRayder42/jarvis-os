@@ -316,8 +316,9 @@ Left out for license reasons, not quality ones:
 
 ## Animation bundle and Modern Web Guidance (recommended installs)
 
-The setup page's **Animation** group and the **Design** group's Modern Web
-Guidance row are recommendations only: nothing is bundled, so there is no
+The setup page's **Animation** branch (a sub-branch under **Design**, set with
+`"subgroup": "animation"` on rows whose category is `design`) and the Design
+group's Modern Web Guidance row are recommendations only: nothing is bundled, so there is no
 switch, just the upstream install command to copy. Each is marked with an
 `install` array in `setup/skills-catalog.json`. Licenses were read from the
 upstream LICENSE files, with one exception: Motion's repository has no LICENSE
