@@ -130,6 +130,21 @@ test('checker: dangling index link, unindexed file, wikilink counts as indexed, 
   assert.match(r.findings.find((f) => f.type === 'unindexed').detail, /orphan\.md/);
 });
 
+test('checker: hub lifecycle states raise no false alarm (after the first /done, on an upgraded hub)', () => {
+  // After /done: the three placeholders and their MEMORY.md lines are gone.
+  const done = tmp();
+  fs.cpSync(TEMPLATE, done, { recursive: true });
+  for (const f of ['example-feedback-rule.md', 'example-project-note.md', 'example-user-fact.md']) fs.rmSync(path.join(done, f));
+  write(path.join(done, 'MEMORY.md'), fs.readFileSync(path.join(done, 'MEMORY.md'), 'utf8').split('\n').filter((l) => !/\]\(example-/.test(l)).join('\n'));
+  assert.deepEqual(check(done).findings, [], 'placeholders removed together with their index lines');
+  // Upgraded hub: working-rules.md was added by setup, MEMORY.md was left alone (no index line for it).
+  const up = seedHub({ 'MEMORY.md': '# Memory\n- [A](a.md) - x\n', 'a.md': FM(), 'working-rules.md': FM() });
+  assert.deepEqual(check(up).findings, [], 'working-rules.md is loaded by session-start, not via the index');
+  // Consolidation files at the top level are history, never records.
+  const cons = seedHub({ 'MEMORY.md': '# m\n', 'CONTEXT.md': FM() + '`/Users/nobody/x`', 'conversation-log.md': FM(), 'patterns.md': FM() });
+  assert.deepEqual(check(cons).findings, []);
+});
+
 test('checker: check: closed vocabulary (exists, absent, grep); unknown verbs are reported and never run', () => {
   const dir = tmp();
   write(path.join(dir, 'there.txt'), 'hello version 1.2.3\n');

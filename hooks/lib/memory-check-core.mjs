@@ -20,6 +20,10 @@ export const FS_ROOTS = new Set(['Users', 'home', 'tmp', 'private', 'opt', 'etc'
 // are never "memory records": no unindexed check, no dead-path scan.
 export const SYSTEM_FILES = new Set(['memory.md', 'context.md', 'patterns.md', 'conversation-log.md', 'readme.md']);
 
+// Plugin-owned hub files that session-start loads directly, so they have no MEMORY.md line and must
+// not be reported as unindexed (hubs created before working-rules.md existed never got one).
+export const UNINDEXED_OK = new Set(['working-rules.md']);
+
 export const TYPES = ['dead_path', 'dangling_index', 'unindexed', 'check_failed', 'check_invalid',
   'review_overdue', 'malformed'];
 
@@ -160,7 +164,7 @@ function scanIndex(indexPath, text, hub, recordNames, out) {
     }
   }
   for (const name of recordNames) {
-    if (!linked.has(name)) {
+    if (!linked.has(name) && !UNINDEXED_OK.has(name)) {
       out.findings.push({ type: 'unindexed', file: path.join(hub, name), line: 1,
         detail: '`' + name + '` has no line in MEMORY.md',
         proposed: 'add an index line for `' + name + '` to MEMORY.md, or delete the file if it is obsolete.' });
