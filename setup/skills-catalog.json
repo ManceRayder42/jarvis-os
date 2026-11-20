@@ -289,7 +289,8 @@
       "detect": null,
       "default": true,
       "category": "research",
-      "details": "Drives NotebookLM to ingest sources, ask questions, and return a cited research synthesis."
+      "details": "Drives NotebookLM to ingest sources, ask questions, and return a cited research synthesis.",
+      "bundle": "research"
     },
     {
       "id": "media-gen",
@@ -305,7 +306,8 @@
       "detect": null,
       "default": false,
       "category": "media",
-      "details": "Photoreal image and video generation and upscaling via fal.ai, pay-per-use."
+      "details": "Photoreal image and video generation and upscaling via fal.ai, pay-per-use.",
+      "bundle": "content"
     },
     {
       "id": "playwright-cli",
@@ -396,7 +398,8 @@
       "detect": null,
       "default": false,
       "category": "media",
-      "details": "Speech in and speech out. Transcribes voice notes with ElevenLabs Scribe and falls back to whisper running locally on your own machine; speaks replies with ElevenLabs text-to-speech. Without a key the transcription half still works offline."
+      "details": "Speech in and speech out. Transcribes voice notes with ElevenLabs Scribe and falls back to whisper running locally on your own machine; speaks replies with ElevenLabs text-to-speech. Without a key the transcription half still works offline.",
+      "bundle": "content"
     },
     {
       "id": "council",
