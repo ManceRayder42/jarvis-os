@@ -97,6 +97,57 @@ semantic search → the web last). Edit it freely — it is yours. Existing
 memory folders get it the next time you run `/jarvis-setup`; nothing already
 there is overwritten.
 
+## Memory hygiene
+
+Two small hooks keep the memory from rotting. Both are plain Node scripts (no Python, no model, no
+network), fail open, and do nothing until your memory folder has a `MEMORY.md`.
+
+**What goes stale.** Looking at a real memory folder, stale facts came in three kinds: paths that
+moved or were archived, versions that changed, and "X is missing / broken" notes that were fixed
+later. All three can be checked by a machine. Two more things drift: an index line that no longer
+matches its file, and a hard-coded list (of projects, say) that rots because nobody re-reads it,
+so derive such lists from the disk at the time you need them. Fix a stale fact with a dated note
+("moved to X, checked 2026-11-19") rather than deleting it: the old fact still explains past
+decisions.
+
+**Memory check** (`hooks/memory-check.mjs`, SessionStart, at most once per 24 hours). Writes
+`<hub>/reports/memory-check-YYYY-MM-DD.md` (the newest 14 are kept) and prints one line when it
+found something. It never edits memory.
+
+| Check | Rule |
+|---|---|
+| Dead paths | Only unambiguous paths: absolute (`/Users/...`), `~/...`, a drive letter. Repo-relative paths, URL routes and anything with `*`, `<x>` or `$` are counted as "not checked", never reported. A path on a line that says moved, gone, archived, הועבר or נמחק goes under "Not counted". |
+| Index | A `MEMORY.md` link to a missing file; a memory file (top-level `.md` with frontmatter, other than `CONTEXT.md`, `patterns.md`, `conversation-log.md`) with no index line. Markdown links and `[[wikilinks]]` both count. |
+| `check:` | Optional line in a memory file's frontmatter: `check: exists ~/path`, `check: absent ~/path`, `check: grep ~/path some text`. Paths must be absolute or `~/`. Any other verb is reported and never run; nothing is ever passed to a shell. |
+| `patterns.md` | Records (`### slug` with `- status:`, `- review:` ...) past their review date, or missing `claim`, `evidence` or `review`. Prose is never judged. |
+
+It stops scanning after about 150 ms and says "partial". Off: `JARVIS_MEMORY_CHECK=0`, or create an
+empty file `<hub>/.memory-check.off`. Run it by hand, ignoring the 24-hour limit:
+`node "$CLAUDE_PLUGIN_ROOT/hooks/memory-check.mjs" --force`.
+
+**Corrections become rules** (`hooks/correction-capture.mjs`, on every prompt you send). If your
+message sounds like a correction ("no, I said...", "I told you", "don't ever", "stop doing",
+"wrong again", "לא, אמרתי", "אמרתי לך", "לא, אל תשנה", "תפסיק", "שוב טעית"), one short instruction
+is added for that turn (214 bytes, about 60 to 80 tokens, once per 4 prompts at most): save a feedback rule in your
+memory folder, or add 1 to `violations:` if the rule exists, and reply "Saved as a rule: ... (say
+'undo' to remove)". Words like "always" and "never" count only inside an instruction ("always use
+pnpm", "you never run the linter"), never in a question or an "I always..." statement.
+A reference does not count: "the folder that I asked you to", "הפירוט שביקשתי ממך" point back at an
+old request. A plain order ("אל תשנה כלום", "stop opening tabs") is an instruction, and counts only
+next to a marker such as "לא,", "שוב", "again", "please" or "I repeat". Text inside pasted blocks
+is never read. Hebrew is matched on whole words after removing 1 to 3 prefix letters
+(ו ה ב כ ל מ ש): "לאמר" is not "אמרתי", and "שאמרתי לך" (a relative clause) is quiet while
+"ואמרתי לך" counts. It prefers missing a vague correction to firing on a normal message. Off:
+`JARVIS_CORRECTION_CAPTURE=0`, or an empty file `<hub>/.correction-capture.off`;
+`JARVIS_CORRECTION_COOLDOWN=<prompts>` changes the pause.
+
+`violations:` is the count of corrections after a rule was already saved. A rising number means the
+rule is in the wrong place (a sentence in a note instead of a working rule). The record format is in
+`skills/memory-consolidation/references/record-format.md`.
+
+These two hooks are registered by the Claude Code plugin only; Codex and Cursor keep the plain
+memory load.
+
 ## Optional skills
 
 `playwright-cli`, `obsidian-markdown`, `obsidian-bases`, `json-canvas`,
@@ -343,17 +394,48 @@ Left out on purpose:
   protected, reachable only from your own computer, and it shuts itself
   down.
 
+## Memory setup
+
+Skill `memory-setup` (say "set up memory" or "תגדיר זיכרון"). One deterministic script,
+`skills/memory-setup/scripts/memory-setup.mjs`, does all the file work; the skill only runs it and
+relays the summary. Node standard library only, no network, nothing installed, always exits 0.
+
+```
+node skills/memory-setup/scripts/memory-setup.mjs [--lang he|en] [--dry-run] [--hub <dir>]
+```
+
+| Step | What it does | If it already exists |
+|---|---|---|
+| Hub | Uses `--hub`, else `JARVIS_HUB`, else `~/.jarvis-hub-path`, else `~/jarvis-hub`. For the last two defaults it writes `~/.jarvis-hub-path` so the session hook finds the hub. | left as is |
+| Memory | Hub with no `MEMORY.md`: copies `memory-template/` (index, working rules, three examples with `violations:`). | a hub that has a `MEMORY.md` gets no seed files |
+| Knowledge pack | `<hub>/knowledge/README.md` (pack convention: index spine, load-on-demand files, source and evidence tier per claim), `index.md` (router), `memory-conventions.md` (one fact per file, index line, feedback rule with `violations:`, stale facts). | each file skipped, "exists, left as is" |
+| Wiki | `<hub>/raw/README.md` (inbox), `<hub>/wiki/README.md`, `<hub>/wiki/index.md`. Same layout the `wiki-article` skill writes to. | same |
+| Layered CLAUDE.md | `~/.claude/CLAUDE.md` (or `$CLAUDE_CONFIG_DIR/CLAUDE.md`): a marked block `<!-- shufi-memory:begin v1 -->` ... `<!-- shufi-memory:end -->` of about 450 bytes (about 110 tokens per session): the hub path, one "MUST read `knowledge/index.md` before a subject task" pointer, the correction rule, the stale-fact rule. | file missing: created. No block: appended at the end; everything before it stays byte for byte, and the original is saved once as `CLAUDE.md.shufi-bak`. Block present and current: no change. Block present but different (hub moved): only the block is refreshed. Damaged or duplicated markers, or a block from a newer version: left alone and reported. |
+| qmd | Looks for `qmd` on PATH. Found: prints `qmd collection add <hub> --name memory && qmd embed`. Missing: prints `npm install -g @tobilu/qmd`. Never runs either. | always printed |
+| Memory check | Verifies `hooks/memory-check.mjs` is registered under SessionStart in `plugin.json`, then runs the checker once, read-only (no stamp, no report), and prints "clean" or the number of stale-looking items. | always printed |
+| Correction capture | Verifies `hooks/correction-capture.mjs` is registered under UserPromptSubmit and prints the kill switch (`<hub>/.correction-capture.off`) and the one-step use: correct Claude, say "undo" to remove the rule. | always printed |
+
+Files are created with an exclusive-create write, so a file that appears between the check and the
+write is never overwritten. `--dry-run` writes nothing, not even the pointer file or a folder. The
+output language is `--lang`, else `JARVIS_LANG`, else `LC_ALL` / `LANG` (a value starting with `he`
+means Hebrew), else English; the seeded README and index files follow it too, their frontmatter keys
+stay English. The CLAUDE.md block is English in every language (it is an instruction to the model,
+and one text means a run in another language never rewrites it).
+
+Remove it: delete the lines from `<!-- shufi-memory:begin v1 -->` to `<!-- shufi-memory:end -->`
+in your `CLAUDE.md`. The hub folders are yours and stay.
+
 ## Repo layout
 
 ```
 .claude-plugin/       plugin + marketplace manifests
-hooks/                startup script — injects hub MEMORY.md
+hooks/                startup script (injects hub MEMORY.md), memory check, correction-to-rule hook
 commands/             /jarvis-setup
 setup/                the temporary local setup page + its server
   profile.json        title, steps and finish text the page renders (an edition = a different profile)
   tools-catalog.json  the Tools step: what each tool is, how to detect, install or connect it
   agent.mjs           the same setup, as commands an agent can run (see AGENTS.md)
-skills/               the default-on shipped skills
+skills/               the default-on shipped skills (memory-setup builds the memory system for a new user)
 optional-skills/      skills switched into skills/ on demand — see "Optional skills"
 memory-template/      seed hub: MEMORY.md index + example memory files
 bridge/               opt-in Telegram phone assistant — see bridge/README.md

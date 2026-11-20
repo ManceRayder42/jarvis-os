@@ -51,6 +51,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const COPY_MARKER = '.optional-skill-copy';
+// Skills the plugin ships switched on live as real directories in skills/
+// (they are in git there). Disabling one moves it to optional-skills/<id>
+// and leaves this marker, so enabling moves it back instead of symlinking:
+// after a disable/enable round trip the plugin tree is exactly as shipped.
+const PARKED_MARKER = '.shipped-skill-parked';
 
 // Known-good skill ids, loaded once. This is the "validate against the
 // catalog rather than trusting it as a path segment" requirement from the
@@ -118,12 +123,17 @@ export async function setSkillEnabled(pluginRoot, skillId, enabled) {
           if (resolved === path.resolve(src)) return { ok: true, action: 'already-enabled' };
           return { ok: false, action: 'error', error: `skills/${skillId} is a symlink pointing elsewhere (${resolved})` };
         }
-        if (fs.existsSync(path.join(dest, COPY_MARKER))) {
-          return { ok: true, action: 'already-enabled' };
-        }
-        return { ok: false, action: 'error', error: `skills/${skillId} already exists and isn't managed by this materializer` };
+        // A real directory is either a materialized copy or a skill the
+        // plugin ships switched on. Either way it is already loaded.
+        return { ok: true, action: 'already-enabled' };
       }
       if (!fs.existsSync(src)) return { ok: false, action: 'not-found' };
+
+      if (fs.existsSync(path.join(src, PARKED_MARKER))) {
+        fs.renameSync(src, dest);
+        fs.rmSync(path.join(dest, PARKED_MARKER), { force: true });
+        return { ok: true, action: 'enabled' };
+      }
 
       try {
         const rel = path.relative(path.dirname(dest), src);
@@ -154,7 +164,19 @@ export async function setSkillEnabled(pluginRoot, skillId, enabled) {
         fs.rmSync(dest, { recursive: true, force: true });
         return { ok: true, action: 'disabled' };
       }
-      return { ok: false, action: 'error', error: `skills/${skillId} exists and isn't managed by this materializer — refusing to delete it` };
+      // A skill the plugin ships switched on: park it in optional-skills/
+      // (a move, never a delete). Refuse if something is already there,
+      // since that would mean two different copies of the skill.
+      if (fs.existsSync(src)) {
+        return { ok: false, action: 'error', error: `skills/${skillId} and optional-skills/${skillId} both exist as real directories — refusing to touch either` };
+      }
+      fs.mkdirSync(path.dirname(src), { recursive: true });
+      fs.renameSync(dest, src);
+      fs.writeFileSync(
+        path.join(src, PARKED_MARKER),
+        `Shipped skill switched off by setup/skills-materializer.mjs. Enable it again to move it back to skills/${skillId}.\n`,
+      );
+      return { ok: true, action: 'disabled' };
     }
   } catch (e) {
     return { ok: false, action: 'error', error: e.message };
@@ -198,9 +220,7 @@ if (isMain) {
       let state = 'disabled';
       try {
         const st = fs.lstatSync(dest);
-        state = st.isSymbolicLink() || fs.existsSync(path.join(dest, COPY_MARKER))
-          ? 'enabled'
-          : 'blocked (an unmanaged directory of the same name is already there)';
+        state = st.isSymbolicLink() || st.isDirectory() ? 'enabled' : 'blocked (a file of the same name is already there)';
       } catch {
         // stays 'disabled'
       }

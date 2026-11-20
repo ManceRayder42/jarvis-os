@@ -52,6 +52,8 @@ Record recurring behaviors detected. Sections:
 - **## Applied Suggestions** — patterns the user confirmed, now behavior
 - **## Dismissed** — patterns the user rejected, don't suggest again
 
+**Record format.** Write patterns as records, not paragraphs: `### slug` plus `status`, `count`, optional `violations`, `first`, `last`, `review`, `claim`, `action` and at most 3 `evidence` lines. Exact fields and rules, including `violations:` and "an accepted action flips `status` to `applied`", are in `references/record-format.md`. Existing prose bullets stay as they are; use records for anything new.
+
 If a pattern you see in this window's data already exists in the file, increment its count and add the new evidence. If new, add to Observed Patterns with count=1 (or higher if multiple occurrences appear in this window).
 
 Only surface patterns with 3+ total occurrences.

@@ -151,7 +151,24 @@ const ALLOWED_SECRETS = new Set(SKILLS_CATALOG.flatMap((s) => s.requires || []))
 const TOKEN = crypto.randomBytes(24).toString('hex');
 const PAGE_TEMPLATE = fs.readFileSync(path.join(__dirname, 'page.html'), 'utf8');
 
-let hubDir = DEFAULT_HUB;
+// Start from the hub that was already chosen, not the default: every `agent.mjs`
+// command (and every reopen of the page) is a fresh server, so a hub picked
+// with `setup --hub` must be found again here. Same order as the SessionStart
+// hook and the recall skill: JARVIS_HUB, then ~/.jarvis-hub-path, then default.
+function resolveStartHub() {
+  const fromEnv = process.env.JARVIS_HUB;
+  if (fromEnv && fromEnv.trim()) return expandHome(fromEnv.trim());
+  try {
+    const pointer = path.join(os.homedir(), '.jarvis-hub-path');
+    if (fs.lstatSync(pointer).isFile()) {
+      const raw = fs.readFileSync(pointer, 'utf8').trim();
+      if (raw) return expandHome(raw);
+    }
+  } catch { /* not configured yet */ }
+  return DEFAULT_HUB;
+}
+
+let hubDir = resolveStartHub();
 let config = loadConfig(hubDir);
 let lastHeartbeat = Date.now();
 let heartbeatReceived = false; // false until the first /api/heartbeat lands
