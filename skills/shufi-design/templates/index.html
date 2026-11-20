@@ -1,0 +1,73 @@
+<title>Shufi Directions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a slim top bar of direction tabs; the chosen prototype fills the rest of the screen live */
+:root{--bg:#0d1420;--bar:#111f35;--ink:#f2e6d8;--muted:#a9b3c4;--accent:#e5813f;--on:#1f0e04;--line:#26354f;
+ --font:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;flex-direction:column}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bar);z-index:10}
+header{background:var(--bar);border-bottom:1px solid var(--line);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:8px}
+.top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.top b{font-size:15px;letter-spacing:.01em}
+.top span{color:var(--muted);font-size:13px}
+nav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+nav a{flex:none;color:var(--muted);text-decoration:none;font-size:13px;padding:7px 12px;border-radius:99px;border:1px solid var(--line);white-space:nowrap}
+nav a[aria-current="page"]{background:var(--accent);color:var(--on);border-color:var(--accent);font-weight:600}
+nav a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.note{font-size:13px;color:var(--muted);min-height:1.3em;max-width:110ch}
+.note a{color:var(--ink)}
+main{flex:1;min-height:0;position:relative}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.fs{background:none;border:0;color:var(--ink);text-decoration:underline;font:inherit;cursor:pointer;padding:0}
+body.full header{display:none}
+#exit{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:20;background:var(--bar);color:var(--ink);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font:13px var(--font);cursor:pointer;opacity:.55}
+#exit:hover,#exit:focus-visible{opacity:1}
+</style>
+<header>
+ <div class="top"><b>Shufi: six directions</b><span>Each one is a working prototype. Hover and click Shufi, open the Tools step, try "Install bundle".</span></div>
+ <nav id="tabs" aria-label="Directions"></nav>
+ <p class="note" id="note"></p>
+</header>
+<main><iframe id="frame" title="Direction prototype" allow="fullscreen"></iframe></main>
+<button id="exit" type="button" hidden>Exit full screen (Esc)</button>
+<script>
+const D=[
+ ['r3-sky','R3 · Constellation Nest','Round 3. Night sky: the nest is drawn as constellations while Shufi chats from the sill. Keys 1/2/Enter.'],
+ ['r3-split','R3 · Window + Night Canvas','Round 3. Shufi\'s night window on the left; the live-canvas elements build on a night felt panel on the right.'],
+ ['r3-tree','R3 · The Nest Tree (draft)','Round 3 draft, still being polished. A felt tree in the night: branches draw out, bundles hang as lantern clusters that light up when installed.'],
+ ['atelier-chat','R2 · Workbench Chat','Round 2, desktop. Felt Atelier + chat: his lines are paper tags on the left; on the workbench to the right, whatever he talks about gets pinned, and installed tools are sewn on with a needle.'],
+ ['atelier-studio','R2 · Felt Studio App','Round 2, desktop. A felt desktop app: step-patch rail, a wide chat with felt-swatch cards, a pinboard inspector. ↑/↓ jump between steps.'],
+ ['atelier-table','R2 · Crafting Table','Round 2, desktop. A top-down felt crafting table: Shufi at the head, step patterns along the edge, tools laid out as felt pieces. T opens the chat history.'],
+ ['atelier-letters','R2 · Notes on the Board','Round 2, desktop. Felt Atelier + chat: the conversation is a thread of notes down the middle of a wide felt board; finished steps get sewn into the left margin, the current kit sits in the right. Keys 1/2/Enter.'],
+ ['atelier-window','R2 · Shufi\'s Window','Round 2, desktop. Felt Atelier + chat: big Shufi in an arched felt window talks to you; step tabs on top, a sewing-kit panel of tools on the right. Click Shufi to poke him.'],
+ ['chat-canvas','R2 · Chat + Live Canvas','Round 2, desktop. New chat direction: talk on the left, a picture of your nest gets drawn on a big Apple-style canvas on the right. Enter to begin.'],
+ ['chat-messages','R2 · Messages','Round 2, desktop. New chat direction: a Mac Messages-style app, one conversation per step, tools arrive as link-preview bubbles. ⌘I opens details, hover a bubble for tapbacks.'],
+ ['atelier','1 · Felt Atelier','The page is Shufi\'s felting workbench: felt patches with stitched seams, paper tags, cloth-pouch bundles.'],
+ ['apple','2 · Gallery (Apple)','Apple\'s language: Shufi is the product photo on light and dark tiles, one orange action color, "shop the lineup" bundles.'],
+ ['carousel','3 · Turning Owl','From your Codrops bookmark: Shufi\'s poses turn on a 3D wall as you scroll; giant step names slide across. Best at full desktop width.'],
+ ['lamp','4 · Night Desk','One warm lamp in the dark; move your pointer to light the notes. Steps open with a mask reveal (your other Codrops bookmark).'],
+ ['fieldguide','5 · Field Guide','A museum bird guide about one owl: each step is a numbered plate with annotations.'],
+ ['chat','6 · Just Talk','Setup is a conversation with Shufi. Number keys pick replies, Enter continues.'],
+ ['shufi-3d','★ 3D Shufi','Real 3D Shufi in code (Three.js, no model files). Drag to turn him, use the panel to change poses, make him talk, hop. Felt sheen, glass lenses, warm key and cool rim light.'],
+ ['shufi-code-avatar','★ Code Shufi 2D','Shufi drawn entirely in code (68 KB, no images). Six skins, a turnaround and 12 expressions; the puppet lets you set states, make him talk, follow your cursor. Fable\'s pick: Soft flat.'],
+];
+const tabs=document.getElementById('tabs'),frame=document.getElementById('frame'),note=document.getElementById('note');
+D.forEach(([id,label])=>{const a=document.createElement('a');a.href='#'+id;a.textContent=label;a.id='t-'+id;tabs.append(a)});
+function show(){const id=(location.hash||'#r3-sky').slice(1);const d=D.find(x=>x[0]===id)||D[0];
+ document.querySelectorAll('nav a').forEach(a=>a.removeAttribute('aria-current'));
+ const t=document.getElementById('t-'+d[0]);t.setAttribute('aria-current','page');t.scrollIntoView({inline:'nearest',block:'nearest'});
+ note.innerHTML=d[2]+' <button class="fs" id="fsBtn" type="button">Open full screen</button>';
+ document.getElementById('fsBtn').onclick=enterFull;
+ if(!frame.src.endsWith(d[0]+'.html'))frame.src=d[0]+'.html';}
+const exitBtn=document.getElementById('exit');
+function enterFull(){document.body.classList.add('full');exitBtn.hidden=false;
+ try{const p=document.documentElement.requestFullscreen?.();if(p&&p.catch)p.catch(()=>{});}catch(e){}
+ frame.focus();}
+function leaveFull(){document.body.classList.remove('full');exitBtn.hidden=true;
+ try{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});}catch(e){}}
+exitBtn.onclick=leaveFull;
+addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('full'))leaveFull();});
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('full'))leaveFull();});
+addEventListener('hashchange',show);show();
+</script>

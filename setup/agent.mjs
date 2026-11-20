@@ -246,7 +246,7 @@ const COMMANDS = {
     console.log((s.cfg.profile && s.cfg.profile.title) || 'Setup');
     line(!s.preflight.some((c) => c.required && !c.ok), 'Computer', s.preflight.filter((c) => c.ok).length + '/' + s.preflight.length + ' checks');
     line(!!s.cfg.hub_exists, 'Memory', s.cfg.hub_exists ? s.cfg.hub : 'not created');
-    line(null, 'Skills', s.skills.filter((k) => k.enabled).length + ' of ' + s.skills.length + ' on');
+    line(null, 'Skills', s.skills.filter((k) => k.enabled).length + ' of ' + s.skills.filter((k) => !k.install).length + ' on');
     const ready = s.tools.filter((t) => t.state === 'ready').length;
     line(ready === s.tools.length ? true : null, 'Tools', ready + ' of ' + s.tools.length + ' ready');
     console.log('\n' + (plan.length ? plan.length + ' step(s) left — run `plan` to see them.' : 'Nothing left to do.'));
@@ -275,7 +275,7 @@ const COMMANDS = {
   async skills() {
     const { skills } = await api('/api/skills');
     if (json) return console.log(JSON.stringify(skills, null, 2));
-    skills.forEach((k) => line(k.enabled, `${k.id}`, k.description + (k.precondition_met === false ? ' (needs ' + (k.requires_tool || 'a tool') + ')' : '')));
+    skills.forEach((k) => line(k.enabled, `${k.id}`, k.description + (k.install ? ' (recommended install: ' + k.install.join(' ; ') + ')' : '') + (k.precondition_met === false ? ' (needs ' + (k.requires_tool || 'a tool') + ')' : '')));
   },
 
   async enable() { return toggle(true); },

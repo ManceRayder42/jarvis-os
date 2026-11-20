@@ -1,6 +1,152 @@
 {
-  "_comment": "Per-skill install catalog for the /jarvis-setup page. One entry per skill the plugin can install individually (replaces the old core/research/media category toggles). Every license/author claim here was checked against a primary source (a local LICENSE file, or upstream raw.githubusercontent.com/<owner>/<repo>/<branch>/LICENSE) -- never a README claim or blog post. See setup/server.mjs's report-back for the exact sources read. `id` must match the skill's directory name under skills/ (or optional-skills/ when disabled).",
+  "_comment": "Per-skill install catalog for the /jarvis-setup page. One entry per skill the plugin can install individually (replaces the old core/research/media category toggles). Every license/author claim here was checked against a primary source (a local LICENSE file, or upstream raw.githubusercontent.com/<owner>/<repo>/<branch>/LICENSE) -- never a README claim or blog post. See setup/server.mjs's report-back for the exact sources read. `id` must match the skill's directory name under skills/ (or optional-skills/ when disabled). Entries that carry an `install` array (animation bundle, Modern Web Guidance) are RECOMMENDED EXTERNAL installs: no directory under skills/ or optional-skills/, no toggle on the page, only copyable upstream install commands. Their license was read from the upstream LICENSE file unless the entry's `note` says otherwise. Their `id` therefore does not map to a directory. Optional `subgroup` (e.g. \"animation\" under category \"design\") nests a row as a sub-branch inside its category on the setup page; the category must also have at least one row without a subgroup.",
   "skills": [
+    {
+      "id": "shufi-design",
+      "name": "Shufi Design (main design skill)",
+      "description": "Designs a site or screen as live directions you pick from",
+      "url": "https://github.com/ManceRayder42/jarvis-os/blob/master/skills/shufi-design/SKILL.md",
+      "license": "MIT",
+      "author": "jarvis-os project",
+      "note": "Original to this project. This is the process Shufi's own setup page was designed with; Shufi custom.",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": true,
+      "category": "design",
+      "details": "The design process Shufi was built with: references first, 6 live clickable directions in one tabbed page, then narrowed by your words. Shufi custom."
+    },
+    {
+      "id": "design-modern-web-guidance",
+      "name": "Modern Web Guidance (Google Chrome)",
+      "description": "Keeps generated web code on current browser features and best practices",
+      "url": "https://github.com/GoogleChrome/modern-web-guidance",
+      "license": "Apache-2.0",
+      "author": "Google Chrome",
+      "note": "Recommended external install, not bundled. Apache-2.0 read from the upstream LICENSE file. The marketplace is named googlechrome.",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": false,
+      "category": "design",
+      "install": [
+        "claude plugin marketplace add GoogleChrome/modern-web-guidance",
+        "claude plugin install modern-web-guidance@googlechrome"
+      ],
+      "details": "Searchable guides from the Chrome team so the code Claude writes uses modern CSS, HTML and web APIs instead of stale patterns. Run it alongside the design skill."
+    },
+    {
+      "id": "animation-gsap",
+      "name": "GSAP skills (official)",
+      "description": "Scroll animation, timelines and SVG: the default for page motion",
+      "url": "https://github.com/greensock/gsap-skills",
+      "license": "MIT",
+      "author": "GreenSock",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": false,
+      "category": "design",
+      "subgroup": "animation",
+      "install": [
+        "npx skills add https://github.com/greensock/gsap-skills"
+      ],
+      "details": "Official GreenSock skills: core API, timelines, ScrollTrigger, plugins, React and framework use. Pick this first for anything on a page or tied to scroll."
+    },
+    {
+      "id": "animation-motion",
+      "name": "Motion (official)",
+      "description": "Micro-interactions, springs and gestures in React and Vue",
+      "url": "https://github.com/motiondivision/ai-kit",
+      "license": "MIT (declared in the npm package)",
+      "author": "Motion",
+      "note": "The MIT grant is the license field of the npm package motion-ai; the repository has no LICENSE file, so it is recommended here and never vendored. Docs search and audits use Motion's hosted MCP, which the installer offers.",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": false,
+      "category": "design",
+      "subgroup": "animation",
+      "install": [
+        "npx motion-ai"
+      ],
+      "details": "Official Motion (formerly Framer Motion) skill: best practices for Motion and CSS, spring generator, performance audit. Pick it when the project is already React or Vue."
+    },
+    {
+      "id": "animation-motion-design",
+      "name": "Motion design principles (LottieFiles)",
+      "description": "Timing, easing and choreography rules before you animate",
+      "url": "https://github.com/LottieFiles/motion-design-skill",
+      "license": "MIT",
+      "author": "LottieFiles",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": false,
+      "category": "design",
+      "subgroup": "animation",
+      "install": [
+        "npx skills add LottieFiles/motion-design-skill"
+      ],
+      "details": "Tool-agnostic motion design principles (not a Lottie generator): decide what the motion should feel like, then build it with GSAP, Motion or CSS."
+    },
+    {
+      "id": "animation-rive",
+      "name": "Rive (official)",
+      "description": "Interactive animation that reacts to the user, built from text",
+      "url": "https://github.com/rive-app/skills",
+      "license": "MIT",
+      "author": "Rive",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": false,
+      "category": "design",
+      "subgroup": "animation",
+      "install": [
+        "claude plugin marketplace add rive-app/skills",
+        "claude plugin install rive@rive"
+      ],
+      "details": "Official Rive skill: agents build interactive Rive files with the Rive CLI. Heavier than GSAP; pick it when the animation must respond to input and run on web and mobile."
+    },
+    {
+      "id": "animation-threejs",
+      "name": "Three.js skills",
+      "description": "3D scenes, shaders and glTF animation on the web",
+      "url": "https://github.com/CloudAI-X/threejs-skills",
+      "license": "MIT",
+      "author": "CloudAI-X",
+      "note": "Third-party, not published by the three.js project (it ships no skill of its own).",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": false,
+      "category": "design",
+      "subgroup": "animation",
+      "install": [
+        "npx skills add cloudai-x/threejs-skills"
+      ],
+      "details": "Thirteen three.js skills (scene, materials, shaders, animation, React Three Fiber). Use only for real 3D; for 2D parallax use GSAP."
+    },
+    {
+      "id": "animation-impeccable",
+      "name": "Impeccable animate pass",
+      "description": "Polishes motion on an interface that already exists",
+      "url": "https://github.com/pbakaus/impeccable",
+      "license": "Apache-2.0",
+      "author": "Paul Bakaus",
+      "note": "The closest upstream match for the UI-animation item in the animation skill roundup; that page links no repository.",
+      "requires": [],
+      "requires_tool": null,
+      "detect": null,
+      "default": false,
+      "category": "design",
+      "subgroup": "animation",
+      "install": [
+        "npx impeccable install"
+      ],
+      "details": "The animate command inside Impeccable: reviews and refines the motion of a finished interface. Run it after the design skill, not instead of it."
+    },
     {
       "id": "done",
       "name": "Session Wrap-Up (done)",

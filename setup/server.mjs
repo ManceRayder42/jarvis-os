@@ -9,7 +9,7 @@
 // receive its FIRST heartbeat -- that's the agent-to-human round trip
 // (print URL, human switches app, opens browser), which routinely takes
 // longer than a browser tab-close detection should. Once a heartbeat has
-// landed, it tightens to the normal 15s idle timeout (tab closed). Dies
+// landed, it tightens to the normal 90s idle timeout (tab closed). Dies
 // after 10 minutes regardless, or when the terminal that spawned it is
 // killed (SIGINT/SIGTERM/parent exit).
 
@@ -23,7 +23,10 @@ import { spawn, execFile, execFileSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const HEARTBEAT_IDLE_MS = 15_000; // no heartbeat for this long -> exit, once one has arrived
+// 90s, not 15s: Chrome throttles timers in a hidden tab to about one wake-up
+// per minute, so a tab the user just switched away from (to read the terminal)
+// would look closed and the server would die under them.
+const HEARTBEAT_IDLE_MS = 90_000; // no heartbeat for this long -> exit, once one has arrived
 const FIRST_HEARTBEAT_GRACE_MS = 180_000; // how long we wait for the FIRST heartbeat ever
 const HEARTBEAT_CHECK_MS = 2_000; // how often we check for idleness
 const HARD_CAP_MS = 10 * 60 * 1000; // exit after this, no matter what
@@ -927,7 +930,9 @@ async function materializeSkill(skillId, enabled) {
 // declares a `detect` key, whether its precondition currently holds.
 function handleSkillsList(req, res) {
   const skills = SKILLS_CATALOG.map((s) => {
-    const enabled = fs.existsSync(path.join(PLUGIN_ROOT, 'skills', s.id));
+    // A recommended external install (`install` array) has no directory here:
+    // it is never "enabled" from this server, the page shows its commands.
+    const enabled = !s.install && fs.existsSync(path.join(PLUGIN_ROOT, 'skills', s.id));
     const preconditionMet = s.detect === 'obsidian' ? detectObsidian().present : null;
     return { ...s, enabled, precondition_met: preconditionMet };
   });
@@ -950,6 +955,9 @@ async function handleSkillsSet(req, res) {
   const entry = SKILLS_CATALOG.find((s) => s.id === id);
   if (!entry) {
     return sendJSON(res, 400, { ok: false, error: 'unknown skill id: ' + id });
+  }
+  if (entry.install) {
+    return sendJSON(res, 400, { ok: false, error: 'this one is installed from its own source, not switched on here: ' + entry.install.join(' ; ') });
   }
 
   const result = await materializeSkill(id, enabled);
@@ -1075,7 +1083,7 @@ async function handleSetupAll(req, res) {
 
   const enabled = [];
   const failed = [];
-  for (const skill of SKILLS_CATALOG.filter((sk) => sk.default)) {
+  for (const skill of SKILLS_CATALOG.filter((sk) => sk.default && !sk.install)) {
     const dir = path.join(PLUGIN_ROOT, 'skills', skill.id);
     if (fs.existsSync(dir)) { enabled.push(skill.id); continue; }
     try {
@@ -1571,11 +1579,11 @@ const idleChecker = setInterval(() => {
   // Before the first heartbeat, "idle" just means the human hasn't opened
   // the link yet -- that round trip (read the URL, switch apps, open a
   // browser) routinely takes longer than 15s, so it gets a 180s grace.
-  // Once a heartbeat has landed we know a tab is open, so the normal 15s
+  // Once a heartbeat has landed we know a tab is open, so the normal 90s
   // idle timeout (tab closed) applies.
   const limit = heartbeatReceived ? HEARTBEAT_IDLE_MS : FIRST_HEARTBEAT_GRACE_MS;
   if (Date.now() - lastHeartbeat > limit) {
-    const reason = heartbeatReceived ? 'no heartbeat for 15s (tab closed)' : 'no heartbeat within 180s of starting (link never opened)';
+    const reason = heartbeatReceived ? 'no heartbeat for 90s (tab closed)' : 'no heartbeat within 180s of starting (link never opened)';
     console.log(`[jarvis-setup] ${reason} -- shutting down.`);
     shutdown(0);
   }
@@ -1598,7 +1606,7 @@ server.listen(0, '127.0.0.1', () => {
   console.log(`  ${url}`);
   console.log('');
   console.log('Open that in a browser. This waits up to 180s for that first open, then');
-  console.log('drops to a 15s grace after the tab closes, and shuts down after 10 minutes');
+  console.log('drops to a 90s grace after the tab closes, and shuts down after 10 minutes');
   console.log('no matter what. Closing this terminal also stops it. Reopen anytime with');
   console.log('/jarvis-setup.');
 
