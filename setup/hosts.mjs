@@ -1,4 +1,4 @@
-// setup/hosts.mjs -- host adapters: run Jarvis OS from OpenAI Codex CLI and Cursor.
+// setup/hosts.mjs -- host adapters: run Shufi from OpenAI Codex CLI and Cursor.
 //
 // The plugin stays single-source. The hub is one folder, skills live in skills/,
 // MCP servers come from setup/tools-catalog.json. This file only WIRES a host to
@@ -35,12 +35,28 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_PLUGIN_ROOT = path.resolve(HERE, '..');
 export const HOSTS = ['codex', 'cursor'];
 
-const MD_OPEN = '<!-- >>> jarvis-os (managed by setup/agent.mjs install-host; remove with uninstall-host) >>> -->';
-const MD_CLOSE = '<!-- <<< jarvis-os <<< -->';
-const TOML_OPEN = '# >>> jarvis-os (managed by setup/agent.mjs install-host; remove with uninstall-host) >>>';
-const TOML_CLOSE = '# <<< jarvis-os <<<';
-const SKILL_MARKER = '.jarvis-os-managed';
-const RULE_MARKER = '<!-- jarvis-os managed rule: remove with uninstall-host -->';
+// Markers written by this version.
+const MD_OPEN = '<!-- >>> shufi (managed by setup/agent.mjs install-host; remove with uninstall-host) >>> -->';
+const MD_CLOSE = '<!-- <<< shufi <<< -->';
+const TOML_OPEN = '# >>> shufi (managed by setup/agent.mjs install-host; remove with uninstall-host) >>>';
+const TOML_CLOSE = '# <<< shufi <<<';
+const SKILL_MARKER = '.shufi-managed';
+const RULE_MARKER = '<!-- shufi managed rule: remove with uninstall-host -->';
+
+// Markers an earlier release (when the plugin was called jarvis-os) wrote. Still recognised
+// everywhere we find, detect or remove something, so an old install-host run upgrades and
+// uninstalls cleanly. Never written any more.
+const LEGACY_MD_OPEN = '<!-- >>> jarvis-os (managed by setup/agent.mjs install-host; remove with uninstall-host) >>> -->';
+const LEGACY_MD_CLOSE = '<!-- <<< jarvis-os <<< -->';
+const LEGACY_TOML_OPEN = '# >>> jarvis-os (managed by setup/agent.mjs install-host; remove with uninstall-host) >>>';
+const LEGACY_TOML_CLOSE = '# <<< jarvis-os <<<';
+const LEGACY_SKILL_MARKER = '.jarvis-os-managed';
+const LEGACY_RULE_MARKER = '<!-- jarvis-os managed rule: remove with uninstall-host -->';
+
+const MD = { open: MD_OPEN, close: MD_CLOSE, legacyOpen: LEGACY_MD_OPEN, legacyClose: LEGACY_MD_CLOSE };
+const TOML = { open: TOML_OPEN, close: TOML_CLOSE, legacyOpen: LEGACY_TOML_OPEN, legacyClose: LEGACY_TOML_CLOSE };
+const SKILL_MARKERS = [SKILL_MARKER, LEGACY_SKILL_MARKER];
+const hasRuleMarker = (text) => typeof text === 'string' && (text.includes(RULE_MARKER) || text.includes(LEGACY_RULE_MARKER));
 
 // ---------------------------------------------------------------- file helpers
 
@@ -54,15 +70,15 @@ function lstat(p) {
 
 function writeAtomic(file, text) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  const tmp = file + '.jarvis-os-tmp-' + process.pid;
+  const tmp = file + '.shufi-tmp-' + process.pid;
   fs.writeFileSync(tmp, text);
   fs.renameSync(tmp, file);
 }
 
 function backupName(file, now) {
   const stamp = now.toISOString().replace(/[-:T]/g, '').slice(0, 14);
-  let n = file + '.jarvis-os-backup-' + stamp;
-  for (let i = 1; lstat(n); i++) n = file + '.jarvis-os-backup-' + stamp + '-' + i;
+  let n = file + '.shufi-backup-' + stamp;
+  for (let i = 1; lstat(n); i++) n = file + '.shufi-backup-' + stamp + '-' + i;
   return n;
 }
 
@@ -105,17 +121,54 @@ function findBlock(text, open, close) {
   return { found: true, start: a, end: b + close.length };
 }
 
+// Our block under either marker pair. The current pair wins when both exist.
+// `broken` when either pair has an opening marker without a closing one.
+function findManaged(text, spec) {
+  const n = findBlock(text, spec.open, spec.close);
+  const l = findBlock(text, spec.legacyOpen, spec.legacyClose);
+  if (n.broken || l.broken) return { found: true, broken: true };
+  if (n.found) return { ...n, legacy: false };
+  if (l.found) return { ...l, legacy: true };
+  return { found: false };
+}
+
+// The text of every managed block (current and legacy), for reading ids back out.
+function blockTexts(text, spec) {
+  const out = [];
+  for (const [o, c] of [[spec.open, spec.close], [spec.legacyOpen, spec.legacyClose]]) {
+    const f = findBlock(text, o, c);
+    if (f.found && !f.broken) out.push(text.slice(f.start, f.end));
+  }
+  return out;
+}
+
+// `text` with every managed block (current and legacy) cut out. Damaged markers are left as they are.
+function outsideBlocks(text, spec) {
+  let t = text;
+  for (const [o, c] of [[spec.open, spec.close], [spec.legacyOpen, spec.legacyClose]]) {
+    const f = findBlock(t, o, c);
+    if (f.found && !f.broken) t = t.slice(0, f.start) + t.slice(f.end);
+  }
+  return t;
+}
+
 // Returns the new text, or null when the markers are damaged (caller reports, writes nothing).
-function upsertBlock(text, block, open, close) {
-  const f = findBlock(text, open, close);
-  if (f.broken) return null;
-  const body = open + '\n' + block.replace(/\n+$/, '') + '\n' + close;
-  if (f.found) return text.slice(0, f.start) + body + text.slice(f.end);
+// A block under the legacy markers is replaced by the new one (in the same place), never duplicated.
+function upsertBlock(text, block, spec) {
+  const n = findBlock(text, spec.open, spec.close);
+  const l = findBlock(text, spec.legacyOpen, spec.legacyClose);
+  if (n.broken || l.broken) return null;
+  const body = spec.open + '\n' + block.replace(/\n+$/, '') + '\n' + spec.close;
+  if (n.found) {
+    const next = text.slice(0, n.start) + body + text.slice(n.end);
+    return l.found ? removeBlock(next, { open: spec.legacyOpen, close: spec.legacyClose }) : next;
+  }
+  if (l.found) return text.slice(0, l.start) + body + text.slice(l.end);
   if (!text) return body + '\n';
   return text.replace(/\n*$/, '\n') + '\n' + body + '\n';
 }
 
-function removeBlock(text, open, close) {
+function removeOne(text, open, close) {
   const f = findBlock(text, open, close);
   if (f.broken) return null;
   if (!f.found) return text;
@@ -126,19 +179,27 @@ function removeBlock(text, open, close) {
   return before + after;
 }
 
+// Removes the block under the current and the legacy markers. Null when either is damaged.
+function removeBlock(text, spec) {
+  let t = removeOne(text, spec.open, spec.close);
+  if (t === null) return null;
+  if (spec.legacyOpen) t = removeOne(t, spec.legacyOpen, spec.legacyClose);
+  return t;
+}
+
 // ---------------------------------------------------------------- instruction text
 
 function instructionText(host, root) {
   const skill = host === 'codex' ? '`$done`' : '`/done`';
   return [
-    '## Jarvis memory (jarvis-os)',
+    '## Shufi memory',
     '',
     'A persistent memory hub (a folder of markdown notes) carries context between sessions and projects.',
     '',
     '- Find the hub: the `JARVIS_HUB` environment variable if set, otherwise the path written in `~/.jarvis-hub-path`.',
-    '- At the start of a session, unless a "# Jarvis memory" section was already injected into your context, read `<hub>/MEMORY.md` and, if it exists, `<hub>/working-rules.md`. Read other hub files only when a task needs them.',
+    '- At the start of a session, unless a memory section ("# Shufi memory", or "# Jarvis memory" from older releases) was already injected into your context, read `<hub>/MEMORY.md` and, if it exists, `<hub>/working-rules.md`. Read other hub files only when a task needs them.',
     '- If there is no hub or no `MEMORY.md`, the memory is not set up. Say so once and offer to set it up: `node "' + path.join(root, 'setup', 'agent.mjs') + '" plan`.',
-    '- The jarvis-os skills are installed for you. Their instructions say `${CLAUDE_PLUGIN_ROOT}`; on this host that means `' + root + '`.',
+    '- The Shufi skills are installed for you. Their instructions say `${CLAUDE_PLUGIN_ROOT}`; on this host that means `' + root + '`.',
     '- When the user says "done" or ends a work session, use the ' + skill + ' skill so the session is written into the hub.',
   ].join('\n');
 }
@@ -178,7 +239,7 @@ function normalizedSkillMd(text) {
 function walk(dir, rel = '') {
   const out = [];
   for (const name of fs.readdirSync(path.join(dir, rel)).sort()) {
-    if (name === 'node_modules' || name === '.DS_Store' || name === SKILL_MARKER) continue;
+    if (name === 'node_modules' || name === '.DS_Store' || SKILL_MARKERS.includes(name)) continue;
     const r = path.join(rel, name);
     const st = fs.statSync(path.join(dir, r));
     if (st.isDirectory()) out.push(...walk(dir, r)); else out.push(r);
@@ -221,8 +282,11 @@ function skillState(dest, id, srcLink, ids) {
     return { kind: ours ? 'link' : 'foreign', target };
   }
   if (st.isDirectory()) {
-    const marker = readText(path.join(dest, SKILL_MARKER));
-    if (marker !== null) { let m = {}; try { m = JSON.parse(marker); } catch { /* old/damaged marker: still ours */ } return { kind: 'copy', hash: m.hash }; }
+    // Current marker first; a dir with only the legacy marker (older release) is still ours.
+    for (const name of SKILL_MARKERS) {
+      const marker = readText(path.join(dest, name));
+      if (marker !== null) { let m = {}; try { m = JSON.parse(marker); } catch { /* old/damaged marker: still ours */ } return { kind: 'copy', hash: m.hash, legacy: name === LEGACY_SKILL_MARKER }; }
+    }
   }
   return { kind: 'foreign' };
 }
@@ -243,7 +307,7 @@ function syncSkills(ctx, destDir, mode) {
     const dest = path.join(destDir, id);
     const needsCopy = mode === 'copy' || normalizedSkillMd(fs.readFileSync(path.join(src, 'SKILL.md'), 'utf8')) !== null;
     const state = skillState(dest, id, src, ids);
-    if (state.kind === 'foreign') { act(ctx, 'skill', dest, 'skipped', 'exists and is not managed by jarvis-os; left alone'); continue; }
+    if (state.kind === 'foreign') { act(ctx, 'skill', dest, 'skipped', 'exists and is not managed by Shufi; left alone'); continue; }
     if (!needsCopy) {
       if (state.kind === 'link' && state.target === src) { act(ctx, 'skill', dest, 'unchanged'); continue; }
       if (!ctx.dryRun) {
@@ -255,7 +319,16 @@ function syncSkills(ctx, destDir, mode) {
       act(ctx, 'skill', dest, state.kind === 'none' ? 'created' : 'updated', 'symlink');
     } else {
       const hash = treeHash(src);
-      if (state.kind === 'copy' && state.hash === hash) { act(ctx, 'skill', dest, 'unchanged'); continue; }
+      if (state.kind === 'copy' && state.hash === hash && !state.legacy) { act(ctx, 'skill', dest, 'unchanged'); continue; }
+      if (state.kind === 'copy' && state.hash === hash) {
+        // Same content, old marker name: swap the marker file, keep the copy.
+        if (!ctx.dryRun) {
+          fs.writeFileSync(path.join(dest, SKILL_MARKER), JSON.stringify({ source: src, hash }));
+          fs.rmSync(path.join(dest, LEGACY_SKILL_MARKER), { force: true });
+        }
+        act(ctx, 'skill', dest, 'updated', 'marker');
+        continue;
+      }
       if (!ctx.dryRun) {
         if (state.kind !== 'none') removeSkillEntry(dest, state);
         copySkill(src, dest);
@@ -358,8 +431,7 @@ function codexMcpBlock(tools, skipIds) {
 // Server ids the user already defined, outside our block. A second table with the
 // same name would make the whole config.toml invalid, so those are left alone.
 function userDefinedMcp(tomlText) {
-  const f = findBlock(tomlText, TOML_OPEN, TOML_CLOSE);
-  const outside = f.found && !f.broken ? tomlText.slice(0, f.start) + tomlText.slice(f.end) : tomlText;
+  const outside = outsideBlocks(tomlText, TOML);
   const ids = new Set();
   const re = /^\s*\[\s*mcp_servers\s*\.\s*(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))\s*(?:\]|\.)/gm;
   let m;
@@ -407,14 +479,14 @@ function installCodex(ctx) {
     for (const f of both) {
       if (f === target) continue;
       const t = readText(f);
-      if (t !== null && findBlock(t, MD_OPEN, MD_CLOSE).found) {
-        const n = removeBlock(t, MD_OPEN, MD_CLOSE);
+      if (t !== null && findManaged(t, MD).found) {
+        const n = removeBlock(t, MD);
         if (n !== null) commitFile(ctx, 'instructions', f, n.trim() === '' ? null : n, 'moved to ' + path.basename(target));
       }
     }
     const cur = readText(target) || '';
-    const next = upsertBlock(cur, instructionText('codex', ctx.root), MD_OPEN, MD_CLOSE);
-    if (next === null) problem(ctx, 'instructions', target, 'jarvis-os markers are damaged (opening marker without closing one); left untouched');
+    const next = upsertBlock(cur, instructionText('codex', ctx.root), MD);
+    if (next === null) problem(ctx, 'instructions', target, 'Shufi markers are damaged (opening marker without closing one); left untouched');
     else commitFile(ctx, 'instructions', target, next, path.basename(target) === 'AGENTS.override.md' ? 'written to AGENTS.override.md because Codex reads it instead of AGENTS.md' : '');
   }
 
@@ -424,7 +496,7 @@ function installCodex(ctx) {
     if (j) {
       const data = j.data;
       data.hooks = data.hooks && typeof data.hooks === 'object' ? data.hooks : {};
-      const entry = { matcher: 'startup|resume|clear', hooks: [{ type: 'command', command: codexHookCommand(ctx), statusMessage: 'Loading Jarvis memory...', timeout: 10, additionalContextLimit: 6000 }] };
+      const entry = { matcher: 'startup|resume|clear', hooks: [{ type: 'command', command: codexHookCommand(ctx), statusMessage: 'Loading Shufi memory...', timeout: 10, additionalContextLimit: 6000 }] };
       data.hooks.SessionStart = upsertEntry(Array.isArray(data.hooks.SessionStart) ? data.hooks.SessionStart : [], (g) => groupHas(g, CODEX_HOOK_RE), entry);
       commitFile(ctx, 'hook', file, jsonOut(data), 'SessionStart; Codex asks you to trust it once: run /hooks inside codex');
     }
@@ -436,15 +508,14 @@ function installCodex(ctx) {
     const userIds = userDefinedMcp(cur);
     // Additive: servers an earlier run put in our block stay, the new selection joins them.
     const known = ctx.catalog || loadCatalog(ctx.root);
-    const f0 = findBlock(cur, TOML_OPEN, TOML_CLOSE);
-    const prior = f0.found && !f0.broken ? [...cur.slice(f0.start, f0.end).matchAll(/^\[mcp_servers\.([^\]]+)\]/gm)].map((m) => m[1]) : [];
+    const prior = blockTexts(cur, TOML).flatMap((b) => [...b.matchAll(/^\[mcp_servers\.([^\]]+)\]/gm)].map((m) => m[1]));
     const merged = [];
     for (const t of [...known.filter((k) => prior.includes(k.id)), ...ctx.mcpSel]) if (!merged.some((x) => x.id === t.id)) merged.push(t);
     const { text, used } = codexMcpBlock(merged, userIds);
     for (const t of ctx.mcpSel) if (userIds.has(t.id)) act(ctx, 'mcp', file, 'skipped', t.id + ': you already defined [mcp_servers.' + t.id + ']; left alone');
     if (used.length) {
-      const n = upsertBlock(cur, text, TOML_OPEN, TOML_CLOSE);
-      if (n === null) problem(ctx, 'mcp', file, 'jarvis-os markers are damaged; left untouched');
+      const n = upsertBlock(cur, text, TOML);
+      if (n === null) problem(ctx, 'mcp', file, 'Shufi markers are damaged; left untouched');
       else {
         const keyed = used.filter((t) => t.mcp && t.mcp.header_secret).map((t) => t.id + ' needs env var ' + tokenEnv(t.id));
         commitFile(ctx, 'mcp', file, n, used.map((t) => t.id).join(', ') + (keyed.length ? ' (' + keyed.join('; ') + ')' : ''));
@@ -476,9 +547,9 @@ function uninstallCodex(ctx) {
   const dir = codexHome(ctx);
   for (const f of [path.join(dir, 'AGENTS.override.md'), path.join(dir, 'AGENTS.md')]) {
     const t = readText(f);
-    if (t === null || !findBlock(t, MD_OPEN, MD_CLOSE).found) continue;
-    const n = removeBlock(t, MD_OPEN, MD_CLOSE);
-    if (n === null) problem(ctx, 'instructions', f, 'jarvis-os markers are damaged; left untouched');
+    if (t === null || !findManaged(t, MD).found) continue;
+    const n = removeBlock(t, MD);
+    if (n === null) problem(ctx, 'instructions', f, 'Shufi markers are damaged; left untouched');
     else commitFile(ctx, 'instructions', f, n.trim() === '' ? null : n);
   }
   const hooks = path.join(dir, 'hooks.json');
@@ -492,9 +563,9 @@ function uninstallCodex(ctx) {
   }
   const toml = path.join(dir, 'config.toml');
   const t = readText(toml);
-  if (t !== null && findBlock(t, TOML_OPEN, TOML_CLOSE).found) {
-    const n = removeBlock(t, TOML_OPEN, TOML_CLOSE);
-    if (n === null) problem(ctx, 'mcp', toml, 'jarvis-os markers are damaged; left untouched');
+  if (t !== null && findManaged(t, TOML).found) {
+    const n = removeBlock(t, TOML);
+    if (n === null) problem(ctx, 'mcp', toml, 'Shufi markers are damaged; left untouched');
     else commitFile(ctx, 'mcp', toml, n.trim() === '' ? null : n);
   }
   removeAllSkills(ctx, path.join(ctx.home, '.agents', 'skills'));
@@ -525,7 +596,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 function cursorRulePath(project) { return path.join(project, '.cursor', 'rules', 'jarvis-hub.mdc'); }
 
 function cursorRuleText(root) {
-  return '---\ndescription: Jarvis memory hub - read at the start of a session\nalwaysApply: true\n---\n' + RULE_MARKER + '\n\n' + instructionText('cursor', root) + '\n';
+  return '---\ndescription: Shufi memory hub - read at the start of a session\nalwaysApply: true\n---\n' + RULE_MARKER + '\n\n' + instructionText('cursor', root) + '\n';
 }
 
 export function userRuleText(root = DEFAULT_PLUGIN_ROOT) {
@@ -571,7 +642,7 @@ function installCursor(ctx) {
   if (ctx.project) {
     const file = cursorRulePath(ctx.project);
     const cur = readText(file);
-    if (cur !== null && !cur.includes(RULE_MARKER)) act(ctx, 'rule', file, 'skipped', 'exists and is not managed by jarvis-os; left alone');
+    if (cur !== null && !hasRuleMarker(cur)) act(ctx, 'rule', file, 'skipped', 'exists and is not managed by Shufi; left alone');
     else commitFile(ctx, 'rule', file, cursorRuleText(ctx.root), 'project rule, alwaysApply');
   }
 }
@@ -609,7 +680,7 @@ function uninstallCursor(ctx) {
   if (ctx.project) {
     const file = cursorRulePath(ctx.project);
     const cur = readText(file);
-    if (cur !== null && cur.includes(RULE_MARKER)) commitFile(ctx, 'rule', file, null);
+    if (hasRuleMarker(cur)) commitFile(ctx, 'rule', file, null);
   }
 }
 
@@ -620,14 +691,13 @@ function statusOf(ctx, host) {
   const add = (item, ok, detail) => rows.push({ item, ok, detail: detail || '' });
   if (host === 'codex') {
     const dir = codexHome(ctx);
-    const inst = [path.join(dir, 'AGENTS.override.md'), path.join(dir, 'AGENTS.md')].find((f) => { const t = readText(f); return t !== null && findBlock(t, MD_OPEN, MD_CLOSE).found; });
-    add('instructions', Boolean(inst), inst || 'no jarvis-os block in ' + path.join(dir, 'AGENTS.md'));
+    const inst = [path.join(dir, 'AGENTS.override.md'), path.join(dir, 'AGENTS.md')].find((f) => { const t = readText(f); return t !== null && findManaged(t, MD).found; });
+    add('instructions', Boolean(inst), inst || 'no Shufi block in ' + path.join(dir, 'AGENTS.md'));
     const j = readText(path.join(dir, 'hooks.json'));
     let hook = false; try { hook = Boolean(j && JSON.parse(j).hooks.SessionStart.some((g) => groupHas(g, CODEX_HOOK_RE))); } catch { /* none */ }
     add('hook', hook, hook ? 'registered; trust it once with /hooks inside codex' : 'not registered');
     const t = readText(path.join(dir, 'config.toml')) || '';
-    const f = findBlock(t, TOML_OPEN, TOML_CLOSE);
-    const ids = f.found && !f.broken ? [...t.slice(f.start, f.end).matchAll(/^\[mcp_servers\.([^\]]+)\]/gm)].map((m) => m[1]) : [];
+    const ids = blockTexts(t, TOML).flatMap((b) => [...b.matchAll(/^\[mcp_servers\.([^\]]+)\]/gm)].map((m) => m[1]));
     add('mcp', ids.length > 0, ids.join(', ') || 'none');
   } else {
     const dir = cursorHome(ctx);
@@ -637,7 +707,7 @@ function statusOf(ctx, host) {
     let ids = [];
     try { const s = JSON.parse(readText(path.join(dir, 'mcp.json'))).mcpServers; ids = (ctx.catalog || loadCatalog(ctx.root)).filter((t) => s[t.id] !== undefined && same(s[t.id], cursorMcpEntry(t))).map((t) => t.id); } catch { /* none */ }
     add('mcp', ids.length > 0, ids.join(', ') || 'none');
-    if (ctx.project) add('project rule', (readText(cursorRulePath(ctx.project)) || '').includes(RULE_MARKER), cursorRulePath(ctx.project));
+    if (ctx.project) add('project rule', hasRuleMarker(readText(cursorRulePath(ctx.project)) || ''), cursorRulePath(ctx.project));
   }
   const skillsDir = host === 'codex' ? path.join(ctx.home, '.agents', 'skills') : path.join(cursorHome(ctx), 'skills');
   const ids = catalogSkillIds(ctx.root);
@@ -697,7 +767,7 @@ export function hostStatus(host, opts) {
 // What each host cannot do, said plainly. Printed after install so nobody assumes parity.
 export const GAPS = {
   codex: [
-    'Memory at session start: the hook needs a one-time trust. Run codex, type /hooks and trust "Loading Jarvis memory...". Until then the AGENTS.md block makes Codex read the hub itself.',
+    'Memory at session start: the hook needs a one-time trust. Run codex, type /hooks and trust "Loading Shufi memory...". Until then the AGENTS.md block makes Codex read the hub itself.',
     'Codex detects new skills automatically; restart Codex only if they do not appear. Optional skills you enable later need install-host to be run again.',
   ],
   cursor: [
