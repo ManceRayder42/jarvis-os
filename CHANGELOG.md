@@ -3,6 +3,28 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+
+- **Renamed from Jarvis OS to Shufi** (a felt owl; the name comes from the Hebrew for owl). The
+  plugin is `shufi`, the repository is `ManceRayder42/shufi`, the slash command `/jarvis-setup` is
+  now `/shufi-setup`, and the namespaced skill `/jarvis-os:done` is now `/shufi:done`. Hook
+  messages start with `[shufi]` instead of `[jarvis-os]`. New icon and social preview.
+- Nothing on disk moves: the memory folder (`~/jarvis-hub` by default), the pointer file
+  `~/.jarvis-hub-path`, `<hub>/jarvis-config.json`, the `JARVIS_*` environment variables and the
+  `com.jarvis.*` launchd labels keep their names, so an existing setup keeps working. The voice
+  transcript cache moved to `~/.cache/shufi/` (it is only a cache; the old one can be deleted).
+
+### Upgrading from `jarvis-os`
+
+1. `claude plugin uninstall jarvis-os`
+2. `claude plugin marketplace add ManceRayder42/shufi`
+3. `claude plugin install shufi`
+
+Restart Claude Code. Your hub and config stay as they are. GitHub redirects the old repository
+URL, but update any clone or bookmark to `ManceRayder42/shufi`.
+
 ## [0.6.0]
 
 ### Added
@@ -403,7 +425,7 @@ All notable changes to this project are documented here. Format follows
   gitignored, but shouldn't have been generated into a distributed skill
   directory to begin with).
 
-[0.2.0]: https://github.com/ManceRayder42/jarvis-os/compare/v0.1.0...HEAD
+[0.2.0]: https://github.com/ManceRayder42/shufi/compare/v0.1.0...HEAD
 
 ## [0.1.0]
 

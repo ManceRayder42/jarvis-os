@@ -427,7 +427,7 @@ body.topic-on .stage { display: none; }
 const LANG = document.documentElement.lang === 'he' ? 'he' : 'en';
 const I18N = {
   en: {
-    linkOn: 'Connected to your computer', linkOff: 'Setup closed — run /jarvis-setup again',
+    linkOn: 'Connected to your computer', linkOff: 'Setup closed — run /shufi-setup again',
     langBtn: 'עברית', langLabel: 'Switch language to Hebrew', themeLabel: 'Switch between dark and light',
     s_machine: 'Your computer', s_memory: 'Memory', s_skills: 'Skills', s_tools: 'Tools', s_workspace: 'Team workspace', s_phone: 'Phone & voice', s_finish: 'Start using it',
     optional: 'optional', back: '← Back', next: 'Next: {0} →',
@@ -460,7 +460,7 @@ const I18N = {
     tricks: [['cheer', 'Hoo! Still here.'], ['point', 'Pick a branch, any branch.'], ['brush', 'I do love a good design.'], ['camera', 'Say cheese.'], ['key', 'Keys never leave your computer.'], ['celebrate', 'Hooray!'], ['worried', 'Whoa, easy on the clicking!']],
   },
   he: {
-    linkOn: 'מחובר למחשב שלכם', linkOff: 'ההגדרה נסגרה — הריצו שוב /jarvis-setup',
+    linkOn: 'מחובר למחשב שלכם', linkOff: 'ההגדרה נסגרה — הריצו שוב /shufi-setup',
     langBtn: 'EN', langLabel: 'החלפת שפה לאנגלית', themeLabel: 'מעבר בין מצב כהה לבהיר',
     s_machine: 'המחשב שלכם', s_memory: 'זיכרון', s_skills: 'סקילים', s_tools: 'כלים', s_workspace: 'סביבת צוות', s_phone: 'טלפון וקול', s_finish: 'מתחילים להשתמש',
     optional: 'אופציונלי', back: '→ הקודם', next: 'הבא: {0} ←',
@@ -576,7 +576,7 @@ function setLink(on) {
 const state = { cfg: null, profile: null, preflight: [], skills: [], tools: [], telegram: null, current: null, setupResult: null };
 
 const DEFAULT_PROFILE = {
-  product: 'Jarvis OS', title: 'Set up Jarvis', subtitle: 'Memory that follows you into every Claude Code session.',
+  product: 'Shufi', title: 'Set up Shufi', subtitle: 'Memory that follows you into every Claude Code session.',
   steps: ['machine', 'memory', 'skills', 'tools', 'phone', 'finish'],
   finish: { headline: "You're set.", lines: ['Open Claude Code in any folder — it already knows you.', 'Say "done" when you finish working, so it remembers.'] },
 };
@@ -867,7 +867,7 @@ const VIEWS = {
           state.cfg = { ...state.cfg, ...(r.config || {}) };
           const ok = r.vault_link && r.vault_link.linked;
           msg.className = 'msg ' + (ok ? 'ok' : 'bad');
-          msg.textContent = ok ? 'Linked — a “Jarvis” folder now shows inside your vault.' : 'Couldn’t link that folder.';
+          msg.textContent = ok ? 'Linked — your Shufi memory now shows in your vault as the “Jarvis” folder.' : 'Couldn’t link that folder.';
         } catch (e) { msg.className = 'msg bad'; msg.textContent = e.message; }
         done();
       });
@@ -883,7 +883,7 @@ const VIEWS = {
   tools() {
     const list = generalTools();
     const out = head('Tools', 'Programs and connections Claude can use for you. Press Install or Connect — each one says what it’s for. Skip any you don’t need.');
-    if (!list.length) { out.push(row('warn', 'Couldn’t read the tool list', 'Restart setup with /jarvis-setup.')); return out; }
+    if (!list.length) { out.push(row('warn', 'Couldn’t read the tool list', 'Restart setup with /shufi-setup.')); return out; }
     const ready = list.filter((t) => t.state === 'ready').length;
     out.push(el('div', { className: 'callout' }, el('b', { textContent: ready + ' of ' + list.length + ' ready. ' }), document.createTextNode('Recommended ones are marked — the rest are for when you need them.')));
     out.push(toolGrid(list));
@@ -973,7 +973,7 @@ const VIEWS = {
     (p.lines || []).forEach((line, i) => ul.append(el('li', {}, el('span', { className: 'k', textContent: String(i + 1) }), el('div', { textContent: line }))));
     out.push(ul);
     out.push(el('div', { className: 'section-label', textContent: 'Handy commands' }));
-    (p.commands || ['/jarvis-setup', '/done']).forEach((c) => out.push(el('div', { style: 'margin-bottom:8px' }, copyCmd(c))));
+    (p.commands || ['/shufi-setup', '/done']).forEach((c) => out.push(el('div', { style: 'margin-bottom:8px' }, copyCmd(c))));
     return out;
   },
 };

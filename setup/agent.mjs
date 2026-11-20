@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // setup/agent.mjs -- the setup page, for agents.
 //
-// Everything a person can press on the /jarvis-setup page, an agent can run
+// Everything a person can press on the /shufi-setup page, an agent can run
 // from here: read the same checklist, create the memory, switch skills,
 // install or connect tools. It does not re-implement any of it. It starts
 // setup/server.mjs as a child, talks to the same loopback API the page uses
@@ -55,7 +55,7 @@ const USAGE = `usage: node setup/agent.mjs <command>
   obsidian <vault-path>                   link the memory into an Obsidian vault
   install-host <codex|cursor> [--mcp default|none|all|id,id] [--no-skills] [--no-hook] [--no-instructions]
                               [--skills link|copy] [--project <dir>] [--print-user-rule] [--dry-run]
-                                          use Jarvis OS from Codex CLI or Cursor (backs up what it edits; undo with uninstall-host)
+                                          use Shufi from Codex CLI or Cursor (backs up what it edits; undo with uninstall-host)
   uninstall-host <codex|cursor> [--project <dir>] [--dry-run]
   host-status <codex|cursor> [--project <dir>]`;
 
@@ -67,7 +67,7 @@ if (cmd === 'install-host' || cmd === 'uninstall-host' || cmd === 'host-status')
   const flag = (n) => { const i = rest.indexOf(n); return i >= 0 ? rest[i + 1] : undefined; };
   const host = rest[0];
   if (host === 'claude') {
-    console.log('Claude Code uses the plugin itself, no host wiring needed:\n  claude plugin marketplace add ManceRayder42/jarvis-os\n  claude plugin install jarvis-os');
+    console.log('Claude Code uses the plugin itself, no host wiring needed:\n  claude plugin marketplace add ManceRayder42/shufi\n  claude plugin install shufi');
     process.exit(0);
   }
   if (!hosts.HOSTS.includes(host)) { console.error('usage: ' + cmd + ' <' + hosts.HOSTS.join('|') + '>\n\n' + USAGE); process.exit(2); }
@@ -223,8 +223,8 @@ function buildPlan(s, hostRows) {
   s.tools.filter((t) => t.state === 'ready' && t.after && /sign in/i.test(t.after))
     .forEach((t) => steps.push({ step: 'tools', id: t.id, who: 'person', optional: true, what: t.name + ': one-time sign-in (skip if already signed in)', how: t.after }));
   s.skills.filter((k) => k.enabled && (k.requires || []).length)
-    .forEach((k) => steps.push({ step: 'skills', id: k.id, who: 'person', optional: true, what: k.name + ' needs ' + k.requires.join(', '), how: 'enter it on the setup page (/jarvis-setup → Skills)' }));
-  if (profileSteps.includes('phone')) steps.push({ step: 'phone', who: 'person', optional: true, what: 'Telegram and voice', how: '/jarvis-setup → Phone & voice' });
+    .forEach((k) => steps.push({ step: 'skills', id: k.id, who: 'person', optional: true, what: k.name + ' needs ' + k.requires.join(', '), how: 'enter it on the setup page (/shufi-setup → Skills)' }));
+  if (profileSteps.includes('phone')) steps.push({ step: 'phone', who: 'person', optional: true, what: 'Telegram and voice', how: '/shufi-setup → Phone & voice' });
   return steps;
 }
 

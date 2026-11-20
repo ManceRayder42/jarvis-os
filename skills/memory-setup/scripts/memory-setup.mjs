@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-os: memory-setup. Builds the whole memory system for a fresh user, from zero.
+// shufi: memory-setup. Builds the whole memory system for a fresh user, from zero.
 //
 //   node memory-setup.mjs [--lang he|en] [--dry-run] [--hub <dir>]
 //

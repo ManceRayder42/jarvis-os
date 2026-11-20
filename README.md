@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/jarvis-os.jpg" alt="Jarvis OS" width="160">
+  <img src="assets/shufi.jpg" alt="Shufi, the felt owl" width="200">
 </p>
 
-<h1 align="center">Jarvis OS</h1>
+<h1 align="center">Shufi</h1>
 
 <p align="center">
   <b>Claude Code forgets you between conversations. This fixes that.</b><br>
@@ -14,8 +14,13 @@
   <img alt="21 skills" src="https://img.shields.io/badge/skills-21-blue.svg">
   <img alt="API keys required: 0" src="https://img.shields.io/badge/API%20keys%20required-0-brightgreen.svg">
   <img alt="Telemetry: none" src="https://img.shields.io/badge/telemetry-none-lightgrey.svg">
-  <a href="https://github.com/ManceRayder42/jarvis-os/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/ManceRayder42/jarvis-os?style=flat"></a>
+  <a href="https://github.com/ManceRayder42/shufi/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/ManceRayder42/shufi?style=flat"></a>
 </p>
+
+> **Renamed from Jarvis OS.** If you installed `jarvis-os`: run `claude plugin uninstall jarvis-os`,
+> then `claude plugin marketplace add ManceRayder42/shufi` and `claude plugin install shufi`.
+> `/jarvis-setup` is now `/shufi-setup`, and `/jarvis-os:done` is now `/shufi:done`.
+> Your existing memory folder and config stay as they are; nothing to migrate.
 
 ## Quick start
 
@@ -24,22 +29,22 @@ No account, no API key, nothing to pay for.
 **1. Install it.** In Claude Code, run:
 
 ```bash
-claude plugin marketplace add ManceRayder42/jarvis-os
-claude plugin install jarvis-os
+claude plugin marketplace add ManceRayder42/shufi
+claude plugin install shufi
 ```
 
-One step on Claude Code 2.1.275 or later: `/plugin install jarvis-os --marketplace ManceRayder42/jarvis-os`
+One step on Claude Code 2.1.275 or later: `/plugin install shufi --marketplace ManceRayder42/shufi`
 
 **2. Restart Claude Code and say "set me up".** Claude creates your memory
 folder, turns on the default skills and connects the free tools. It asks once
 before installing any software, and leaves you only what needs a person: a key
 or a sign-in.
 
-**Rather click through it?** Type `/jarvis-setup` for a local checklist page
+**Rather click through it?** Type `/shufi-setup` for a local checklist page
 that does the same thing.
 
 <p align="center">
-  <img src="assets/setup.png" alt="The /jarvis-setup page: a numbered checklist on the left, the open step on the right" width="760">
+  <img src="assets/setup.png" alt="The /shufi-setup page: a numbered checklist on the left, the open step on the right" width="760">
 </p>
 
 ## Works with Claude Code, Codex and Cursor
@@ -51,11 +56,11 @@ the gaps listed in [details](docs/details.md#codex-and-cursor).
 | | Install |
 |---|---|
 | **Claude Code** | the two lines above |
-| **Codex CLI** | `git clone https://github.com/ManceRayder42/jarvis-os ~/.jarvis-os && node ~/.jarvis-os/setup/agent.mjs setup --host codex && node ~/.jarvis-os/setup/agent.mjs install-host codex`, then run `/hooks` once inside Codex and trust the hook |
-| **Cursor** | the same with `cursor`, then `node ~/.jarvis-os/setup/agent.mjs install-host cursor --print-user-rule` and paste the output into Customize > Rules (older builds: Cursor Settings > Rules > User Rules) |
+| **Codex CLI** | `git clone https://github.com/ManceRayder42/shufi ~/.shufi && node ~/.shufi/setup/agent.mjs setup --host codex && node ~/.shufi/setup/agent.mjs install-host codex`, then run `/hooks` once inside Codex and trust the hook |
+| **Cursor** | the same with `cursor`, then `node ~/.shufi/setup/agent.mjs install-host cursor --print-user-rule` and paste the output into Customize > Rules (older builds: Cursor Settings > Rules > User Rules) |
 
 It backs up any file it edits and never overwrites yours. Undo:
-`node ~/.jarvis-os/setup/agent.mjs uninstall-host codex` (or `cursor`).
+`node ~/.shufi/setup/agent.mjs uninstall-host codex` (or `cursor`).
 
 ## What you actually get
 

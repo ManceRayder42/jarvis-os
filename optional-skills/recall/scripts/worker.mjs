@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-os session-recall: detached worker. Started by hooks/session-recall.mjs
+// shufi session-recall: detached worker. Started by hooks/session-recall.mjs
 // at SessionEnd, never run in the foreground of a session.
 //
 // Usage: node worker.mjs <transcript.jsonl> <session_id> <reason> <hub>

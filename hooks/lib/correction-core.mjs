@@ -1,4 +1,4 @@
-// jarvis-os: correction detection, pure part (Hebrew and English). No I/O.
+// shufi: correction detection, pure part (Hebrew and English). No I/O.
 //
 //   unwrapPrompt(raw)  -> the text to analyse, or null to skip the prompt
 //   detectCorrection(text) -> { kind: 'strong' | 'weak', term } | null
@@ -231,7 +231,7 @@ export function detectCorrection(raw) {
 // text, so nothing a user pasted can ride along into the context.
 export function buildInstruction(hub, home = '') {
   const shown = home && (hub === home || hub.startsWith(home + '/')) ? '~' + hub.slice(home.length) : hub;
-  return '[jarvis-os] If this corrects you: save ' + shown + '/feedback_<slug>.md ' +
+  return '[shufi] If this corrects you: save ' + shown + '/feedback_<slug>.md ' +
     '(type: feedback, violations: 0; Why; How to apply) + index line. Exists? violations +1. ' +
     'Reply: Saved as a rule: <rule> (say \'undo\' to remove).\n';
 }

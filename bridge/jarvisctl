@@ -7,7 +7,7 @@
 # turns them into real actions. See CLAUDE.bridge.md for how a running
 # session is told to route these.
 #
-#   jarvisctl new                 wrap up to memory (/jarvis-os:done), then restart fresh
+#   jarvisctl new                 wrap up to memory (/shufi:done), then restart fresh
 #   jarvisctl restart             same; SKIP_DONE=1 to skip the wrap-up
 #   jarvisctl model <name>        opus | sonnet | fable | full model id
 #   jarvisctl effort <level>      low | medium | high
@@ -65,10 +65,10 @@ graceful() {
     sleep 4
     # 2. wait for the current turn to end (max 3 min), then queue the wrap-up
     for _ in $(seq 1 90); do busy || break; sleep 2; done
-    # Namespaced: this skill ships inside the jarvis-os plugin, so its slash
-    # command is /jarvis-os:done, not the bare /done a locally-defined skill
+    # Namespaced: this skill ships inside the shufi plugin, so its slash
+    # command is /shufi:done, not the bare /done a locally-defined skill
     # would get.
-    tmux send-keys -t "$SESSION" "/jarvis-os:done" Enter
+    tmux send-keys -t "$SESSION" "/shufi:done" Enter
     sleep 2; tmux send-keys -t "$SESSION" Enter
     # 3. wait for it to start (max 30s) and to finish (max 5 min)
     for _ in $(seq 1 15);  do busy && break; sleep 2; done
@@ -79,7 +79,7 @@ graceful() {
     sed -i '' '/^BRIDGE_SESSION_ID=/d' "$ENVF" 2>/dev/null
     rm -f "$HUB/logs/.bridge-continue"
     tmux kill-session -t "$SESSION" 2>/dev/null
-    log "session wrapped up with /jarvis-os:done and restarted fresh"
+    log "session wrapped up with /shufi:done and restarted fresh"
 }
 
 context_report() {
@@ -120,7 +120,7 @@ restart() {
         echo "restarting in ~4s without a wrap-up (conversation preserved)"
     else
         ( graceful ) >/dev/null 2>&1 &
-        echo "wrapping up with /jarvis-os:done, then restarting (1-5 min)"
+        echo "wrapping up with /shufi:done, then restarting (1-5 min)"
     fi
 }
 

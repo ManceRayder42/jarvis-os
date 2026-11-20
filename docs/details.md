@@ -1,4 +1,4 @@
-# Jarvis OS: details
+# Shufi: details
 
 How it works underneath, the exact skill list, and the license paper trail. None of it is required to use the plugin. Start with the [README](../README.md).
 
@@ -11,7 +11,7 @@ current folder isn't one Claude Code recognizes, that memory silently doesn't
 load. No error, no warning — the context you expected just isn't there, and
 you don't find out until you've explained the same thing for the fourth time.
 
-Jarvis OS sidesteps that: **one hub folder, one `MEMORY.md` file, injected
+Shufi sidesteps that: **one hub folder, one `MEMORY.md` file, injected
 into every conversation's starting context regardless of where you launched
 from.** A small startup script does this in milliseconds and silently does
 nothing on any error — a memory feature that breaks your session start would
@@ -24,7 +24,7 @@ Everything works fine with a plain folder of text files if you don't.
 
 ## Setup, in more detail
 
-`/jarvis-setup` opens a short-lived local web page (only reachable from your
+`/shufi-setup` opens a short-lived local web page (only reachable from your
 own computer, protected by a one-time code in its link) where you pick a
 memory folder (default `~/jarvis-hub`), turn skill groups on or off
 individually, and optionally point at an Obsidian vault (Obsidian's word for
@@ -94,7 +94,7 @@ it did not check**, every reviewer gets a rubric), which model to route
 mechanical lookups to, why a new automation runs propose-only for its first
 week, and the order to look things up in (your notes → exact search →
 semantic search → the web last). Edit it freely — it is yours. Existing
-memory folders get it the next time you run `/jarvis-setup`; nothing already
+memory folders get it the next time you run `/shufi-setup`; nothing already
 there is overwritten.
 
 ## Memory hygiene
@@ -199,11 +199,11 @@ other local edit to an installed plugin.
 `node setup/agent.mjs install-host codex|cursor` wires the host to the same
 memory folder, the same skills and the same tool list. It writes only the
 files the host documents (table below), is safe to run twice, backs up a file
-before changing it (`<file>.jarvis-os-backup-<timestamp>`), never overwrites
+before changing it (`<file>.shufi-backup-<timestamp>`), never overwrites
 anything that is yours, and `uninstall-host` removes exactly what it added.
 `--dry-run` shows what it would do. It needs no server and no new dependency.
 
-Clone the repo to a stable place first (`git clone https://github.com/ManceRayder42/jarvis-os ~/.jarvis-os`),
+Clone the repo to a stable place first (`git clone https://github.com/ManceRayder42/shufi ~/.shufi`),
 because the hook and the instructions contain that path. Moved it, or updated
 the clone? Run `install-host` again; it rewrites the paths. (A Claude Code
 plugin cache folder changes with each version, so do not point Codex or Cursor
@@ -237,7 +237,7 @@ offers nothing.
 | Same, before the hook is trusted, or if hooks are off | managed block in `~/.codex/AGENTS.md` (or `AGENTS.override.md` when that exists and is not empty, because Codex reads it instead; an empty override is skipped) telling the agent where the hub is and to read it first | https://developers.openai.com/codex/guides/agents-md (https://learn.chatgpt.com/docs/agent-configuration/agents-md) | **fallback**: the model has to obey an instruction instead of being handed the text |
 | Skills | one symlink per enabled skill in `~/.agents/skills/` (Codex follows symlinked skill folders) | https://developers.openai.com/codex/skills (https://learn.chatgpt.com/docs/build-skills) | **full**; Codex detects new skills automatically, restart it only if they do not appear |
 | Tools (MCP) | managed block of `[mcp_servers.<id>]` tables in `~/.codex/config.toml`; stdio servers get `startup_timeout_sec = 60` and `npx -y`; a server you already defined is left alone; keyed servers read `bearer_token_env_var` and no key is written | https://developers.openai.com/codex/mcp (https://learn.chatgpt.com/docs/extend/mcp) | **full** for http and stdio servers. OAuth sign-in is `codex mcp login <id>` |
-| Slash commands (`/jarvis-setup`, `/done`) | none: Codex skills are invoked as `$done`; the setup page is `node setup/server.mjs` | | **not possible** as slash commands |
+| Slash commands (`/shufi-setup`, `/done`) | none: Codex skills are invoked as `$done`; the setup page is `node setup/server.mjs` | | **not possible** as slash commands |
 
 **Cursor**
 
@@ -247,7 +247,7 @@ offers nothing.
 | Memory, reliable path | `~/.cursor/rules` is only partly supported by Cursor (needs `---` frontmatter, loads only for workspaces under your home folder), so install-host does not write it. User Rules are set in the app: Customize > Rules (older builds: Cursor Settings > Rules > User Rules); `--print-user-rule` prints the text to paste. Per project, `--project <dir>` writes `.cursor/rules/jarvis-hub.mdc` with `alwaysApply: true` | https://cursor.com/docs/context/rules | **fallback**: one manual paste, or one rule file per project; cannot be automated for all directories. Cursor CLI: the documented sources are `.cursor/rules` (`--project`) or a project-root `AGENTS.md` / `CLAUDE.md`; the User Rule is not documented for the CLI |
 | Skills | one copy per enabled skill in `~/.cursor/skills/` (a marker file lets `uninstall-host` tell ours from yours). Copies, not links: older Cursor builds did not follow symlinked skills (staff-confirmed bug, fixed in 2.5), and copies stay safe | https://cursor.com/docs/skills ; symlink reports: https://forum.cursor.com/t/global-symlinked-skills-are-not-discovered-by-cursor/150028 | **full** in the IDE; copies go stale, so re-run `install-host` after an update. With "Sync Skills for Cloud Agents" on, Cursor moves `~/.cursor/skills` contents to synced storage and a re-run may conflict |
 | Tools (MCP) | `mcpServers.<id>` entries merged into `~/.cursor/mcp.json`; a same-named entry that differs is left alone; keyed servers use `${env:NAME}` | https://cursor.com/docs/context/mcp | **full** in the IDE. Cursor CLI asks for approval first: `agent mcp enable <id>` or `--approve-mcps` (https://cursor.com/docs/cli/mcp) |
-| Slash commands | none from this plugin; skills run as `/skill-name` | https://cursor.com/docs/skills | **not possible** for `/jarvis-setup` |
+| Slash commands | none from this plugin; skills run as `/skill-name` | https://cursor.com/docs/skills | **not possible** for `/shufi-setup` |
 
 ### What stays Claude-Code-only
 
@@ -255,7 +255,7 @@ offers nothing.
   `recall` and Telegram bridge, which depend on Claude Code's hooks and CLI.
 - `${CLAUDE_PLUGIN_ROOT}` in skill text. Codex and Cursor do not set it, so the
   hook and the instruction block both say which folder it means.
-- `/jarvis-setup` as a slash command (the page still runs: `node setup/server.mjs`).
+- `/shufi-setup` as a slash command (the page still runs: `node setup/server.mjs`).
 
 ### Known limits
 
@@ -430,7 +430,7 @@ in your `CLAUDE.md`. The hub folders are yours and stay.
 ```
 .claude-plugin/       plugin + marketplace manifests
 hooks/                startup script (injects hub MEMORY.md), memory check, correction-to-rule hook
-commands/             /jarvis-setup
+commands/             /shufi-setup
 setup/                the temporary local setup page + its server
   profile.json        title, steps and finish text the page renders (an edition = a different profile)
   tools-catalog.json  the Tools step: what each tool is, how to detect, install or connect it

@@ -1,4 +1,4 @@
-// jarvis-os: memory checker, pure part. Model-free, no subprocess, no network, Node stdlib only.
+// shufi: memory checker, pure part. Model-free, no subprocess, no network, Node stdlib only.
 //
 //   checkMemory({ hub, home, today, budgetMs, startedAt }) -> { findings, hints, stats }
 //   renderReport({ hub, today, findings, hints, stats })    -> markdown string

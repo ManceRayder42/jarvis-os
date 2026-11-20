@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Open a [private security advisory](https://github.com/ManceRayder42/jarvis-os/security/advisories/new)
+Open a [private security advisory](https://github.com/ManceRayder42/shufi/security/advisories/new)
 rather than a public issue. If that isn't available to you, open an issue that
 describes the *class* of problem without a working exploit, and say you'd like
 a private channel.
@@ -35,7 +35,7 @@ variable yourself — the skills read the environment first and fall back to
 
 ## The local setup server
 
-`/jarvis-setup` starts an HTTP server. Everything about it is designed around
+`/shufi-setup` starts an HTTP server. Everything about it is designed around
 one fact: **any website you visit can send requests to your localhost.** A
 naive local config server is a real vulnerability, not a theoretical one.
 

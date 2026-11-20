@@ -13,7 +13,7 @@ import { installHost, uninstallHost, hostStatus, listSkills } from '../setup/hos
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'jarvis-hosts-')); }
+function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'shufi-hosts-')); }
 function read(p) { return fs.readFileSync(p, 'utf8'); }
 function exists(p) { try { fs.lstatSync(p); return true; } catch { return false; } }
 function tree(dir) {
@@ -29,7 +29,7 @@ function tree(dir) {
   return out;
 }
 const statuses = (r, kind) => r.actions.filter((a) => !kind || a.kind === kind).map((a) => a.status);
-const backups = (dir) => tree(dir).filter((p) => p.includes('.jarvis-os-backup'));
+const backups = (dir) => tree(dir).filter((p) => p.includes('.shufi-backup'));
 
 // Python's tomllib is a real TOML parser; use it when python3 is around.
 function tomlParse(file) {
@@ -47,7 +47,7 @@ test('codex: fresh install writes instructions, hook, MCP block and skill links'
   assert.equal(r.ok, true);
 
   const agents = read(path.join(home, '.codex', 'AGENTS.md'));
-  assert.match(agents, /jarvis-os \(managed by/);
+  assert.match(agents, /shufi \(managed by/);
   assert.match(agents, /~\/\.jarvis-hub-path/);
   assert.ok(agents.includes(ROOT), 'tells the agent what ${CLAUDE_PLUGIN_ROOT} means');
 
@@ -166,7 +166,7 @@ test('codex: AGENTS.override.md wins over AGENTS.md, so the block goes there', (
   fs.writeFileSync(path.join(dir, 'AGENTS.override.md'), 'override\n');
   fs.writeFileSync(path.join(dir, 'AGENTS.md'), 'plain\n');
   installHost('codex', { home, pluginRoot: ROOT });
-  assert.match(read(path.join(dir, 'AGENTS.override.md')), /jarvis-os \(managed/);
+  assert.match(read(path.join(dir, 'AGENTS.override.md')), /shufi \(managed/);
   assert.equal(read(path.join(dir, 'AGENTS.md')), 'plain\n');
   uninstallHost('codex', { home, pluginRoot: ROOT });
   assert.equal(read(path.join(dir, 'AGENTS.override.md')), 'override\n');
@@ -179,7 +179,7 @@ test('codex: an empty AGENTS.override.md is skipped by Codex, so the block goes 
   fs.writeFileSync(path.join(dir, 'AGENTS.override.md'), '  \n');
   fs.writeFileSync(path.join(dir, 'AGENTS.md'), 'plain\n');
   installHost('codex', { home, pluginRoot: ROOT });
-  assert.match(read(path.join(dir, 'AGENTS.md')), /jarvis-os \(managed/);
+  assert.match(read(path.join(dir, 'AGENTS.md')), /shufi \(managed/);
   assert.equal(read(path.join(dir, 'AGENTS.override.md')), '  \n');
   uninstallHost('codex', { home, pluginRoot: ROOT });
   assert.equal(read(path.join(dir, 'AGENTS.md')), 'plain\n');
@@ -289,7 +289,8 @@ test('cursor: fresh install writes hook, mcp.json and skill copies', () => {
   const skill = path.join(home, '.cursor', 'skills', 'done');
   assert.equal(fs.lstatSync(skill).isSymbolicLink(), false, 'copied, not linked');
   assert.ok(exists(path.join(skill, 'scripts', 'update-context.py')));
-  assert.ok(exists(path.join(skill, '.jarvis-os-managed')));
+  assert.ok(exists(path.join(skill, '.shufi-managed')));
+  assert.equal(exists(path.join(skill, '.jarvis-os-managed')), false);
   assert.equal(exists(path.join(home, '.cursor', 'rules')), false, 'no project rule without --project');
 });
 
@@ -404,14 +405,14 @@ test('hook: no flag prints exactly what Claude Code always got (no plugin-root n
   const { home, hub } = fakeHub();
   const r = runHook([], { HOME: home, JARVIS_HUB: hub });
   assert.equal(r.status, 0);
-  assert.equal(r.stdout, `# Jarvis memory (${hub}/MEMORY.md)\n\n# Memory\n- likes tea\n\n\n# Working rules (${hub}/working-rules.md)\n\nbe brief\n`);
+  assert.equal(r.stdout, `# Shufi memory (${hub}/MEMORY.md)\n\n# Memory\n- likes tea\n\n\n# Working rules (${hub}/working-rules.md)\n\nbe brief\n`);
 });
 
 test('hook: --host codex prints plain text with the plugin root note', () => {
   const { home, hub } = fakeHub();
   const r = runHook(['--host', 'codex'], { HOME: home, JARVIS_HUB: hub });
   assert.equal(r.status, 0);
-  assert.match(r.stdout, /^# Jarvis memory/);
+  assert.match(r.stdout, /^# Shufi memory/);
   assert.match(r.stdout, /likes tea/);
   assert.ok(r.stdout.includes('Plugin root on this host: ' + ROOT));
 });
@@ -466,11 +467,171 @@ test('cli: install-host / host-status / uninstall-host through setup/agent.mjs u
   assert.equal(run('uninstall-host', 'codex').status, 0);
   assert.deepEqual(tree(home).filter((p) => !/^\.codex$|^\.agents$/.test(p)), []);
   assert.equal(run('install-host', 'nope').status, 2);
-  assert.match(run('install-host', 'cursor', '--print-user-rule').stdout, /Jarvis memory/);
+  assert.match(run('install-host', 'cursor', '--print-user-rule').stdout, /Shufi memory/);
   assert.equal(exists(path.join(home, '.cursor')), false, '--print-user-rule writes nothing');
   const c = run('connect', 'context7', '--host', 'cursor');
   assert.equal(c.status, 0, c.stdout + c.stderr);
   assert.ok(JSON.parse(read(path.join(home, '.cursor', 'mcp.json'))).mcpServers.context7);
+});
+
+// ------------------------------------------------------------------ legacy (jarvis-os) markers
+
+const L_MD_OPEN = '<!-- >>> jarvis-os (managed by setup/agent.mjs install-host; remove with uninstall-host) >>> -->';
+const L_MD_CLOSE = '<!-- <<< jarvis-os <<< -->';
+const L_TOML_OPEN = '# >>> jarvis-os (managed by setup/agent.mjs install-host; remove with uninstall-host) >>>';
+const L_TOML_CLOSE = '# <<< jarvis-os <<<';
+const L_RULE = '<!-- jarvis-os managed rule: remove with uninstall-host -->';
+const count = (text, needle) => text.split(needle).length - 1;
+
+// Seed a home with what the old release wrote.
+function seedLegacyCodex(home) {
+  fs.mkdirSync(path.join(home, '.codex'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.codex', 'AGENTS.md'), `# mine\n\n${L_MD_OPEN}\n## Jarvis memory (jarvis-os)\nold text\n${L_MD_CLOSE}\n\ntail\n`);
+  fs.writeFileSync(path.join(home, '.codex', 'config.toml'), `model = "x"\n\n${L_TOML_OPEN}\n[mcp_servers.playwright]\ncommand = "npx"\nargs = ["-y", "@playwright/mcp@latest"]\nstartup_timeout_sec = 60\n${L_TOML_CLOSE}\n`);
+}
+
+function seedLegacySkill(dir, id, root) {
+  const dest = path.join(dir, id);
+  fs.mkdirSync(dest, { recursive: true });
+  fs.writeFileSync(path.join(dest, 'SKILL.md'), 'old\n');
+  fs.writeFileSync(path.join(dest, '.jarvis-os-managed'), JSON.stringify({ source: path.join(root, 'skills', id), hash: 'stale' }));
+  return dest;
+}
+
+test('legacy: codex install over jarvis-os blocks leaves exactly one shufi block and no legacy one', () => {
+  const home = tmp();
+  seedLegacyCodex(home);
+  const r = installHost('codex', { home, pluginRoot: ROOT });
+  assert.equal(r.ok, true, JSON.stringify(r.actions));
+
+  const agents = read(path.join(home, '.codex', 'AGENTS.md'));
+  assert.equal(count(agents, '>>> shufi ('), 1);
+  assert.equal(count(agents, '<!-- <<< shufi <<< -->'), 1);
+  assert.doesNotMatch(agents, /jarvis-os/);
+  assert.doesNotMatch(agents, /old text/);
+  assert.match(agents, /## Shufi memory/);
+  assert.ok(agents.startsWith('# mine\n\n') && agents.includes('\ntail\n'), 'user text around the block survives, block stays in place');
+
+  const toml = read(path.join(home, '.codex', 'config.toml'));
+  assert.equal(count(toml, '# >>> shufi ('), 1);
+  assert.equal(count(toml, '# <<< shufi <<<'), 1);
+  assert.doesNotMatch(toml, /jarvis-os/);
+  assert.equal(count(toml, '[mcp_servers.playwright]'), 1, 'server from the legacy block is not duplicated');
+  assert.ok(toml.startsWith('model = "x"\n'));
+
+  // second run: nothing left to change
+  const before = tree(home);
+  const r2 = installHost('codex', { home, pluginRoot: ROOT });
+  assert.ok(r2.actions.every((a) => a.status === 'unchanged'), JSON.stringify(r2.actions));
+  assert.deepEqual(tree(home), before);
+
+  const st = hostStatus('codex', { home, pluginRoot: ROOT });
+  assert.ok(st.rows.every((x) => x.ok), JSON.stringify(st.rows));
+});
+
+test('legacy: status and server-skip see a jarvis-os-only codex install', () => {
+  const home = tmp();
+  seedLegacyCodex(home);
+  const st = hostStatus('codex', { home, pluginRoot: ROOT });
+  assert.equal(st.rows.find((x) => x.item === 'instructions').ok, true);
+  assert.equal(st.rows.find((x) => x.item === 'mcp').detail, 'playwright');
+  // a legacy-block server is ours, not the user's: install must not skip it as "you already defined"
+  const r = installHost('codex', { home, pluginRoot: ROOT, skills: false, hook: false, instructions: false });
+  assert.equal(statuses(r, 'mcp').includes('skipped'), false, JSON.stringify(r.actions));
+});
+
+test('legacy: a skill dir holding only .jarvis-os-managed counts as managed and is upgraded', () => {
+  const root = fakeRoot();
+  const home = tmp();
+  const skillsDir = path.join(home, '.cursor', 'skills');
+  const dest = seedLegacySkill(skillsDir, 'one', root);
+  const r = installHost('cursor', { home, pluginRoot: root, hook: false, mcp: 'none' });
+  assert.equal(r.ok, true);
+  const one = r.actions.find((a) => a.kind === 'skill' && path.basename(a.path) === 'one');
+  assert.notEqual(one.status, 'skipped', 'legacy marker means managed');
+  assert.match(read(path.join(dest, 'SKILL.md')), /name: one/);
+  assert.ok(exists(path.join(dest, '.shufi-managed')));
+  assert.equal(exists(path.join(dest, '.jarvis-os-managed')), false);
+
+  // same content + legacy marker only: marker is swapped, content kept
+  fs.rmSync(path.join(dest, '.shufi-managed'));
+  const h = JSON.parse(read(path.join(skillsDir, 'two', '.shufi-managed'))).hash;
+  fs.writeFileSync(path.join(skillsDir, 'two', '.jarvis-os-managed'), JSON.stringify({ source: 'x', hash: h }));
+  fs.rmSync(path.join(skillsDir, 'two', '.shufi-managed'));
+  const r2 = installHost('cursor', { home, pluginRoot: root, hook: false, mcp: 'none' });
+  const two = r2.actions.find((a) => a.kind === 'skill' && path.basename(a.path) === 'two');
+  assert.equal(two.status, 'updated');
+  assert.ok(exists(path.join(skillsDir, 'two', '.shufi-managed')));
+  assert.equal(exists(path.join(skillsDir, 'two', '.jarvis-os-managed')), false);
+
+  // a dir with neither marker is still foreign
+  const foreign = path.join(skillsDir, 'three');
+  fs.mkdirSync(foreign);
+  fs.writeFileSync(path.join(foreign, 'SKILL.md'), 'mine\n');
+  assert.equal(skillsKept(home, root, 'three'), 'mine\n');
+});
+
+function skillsKept(home, root, id) {
+  installHost('cursor', { home, pluginRoot: root, hook: false, mcp: 'none' });
+  return read(path.join(home, '.cursor', 'skills', id, 'SKILL.md'));
+}
+
+test('legacy: cursor project rule with the jarvis-os marker is ours and is rewritten with the shufi marker', () => {
+  const home = tmp();
+  const proj = tmp();
+  const file = path.join(proj, '.cursor', 'rules', 'jarvis-hub.mdc');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `---\ndescription: Jarvis memory hub\nalwaysApply: true\n---\n${L_RULE}\n\nold\n`);
+  assert.equal(hostStatus('cursor', { home, pluginRoot: ROOT, project: proj }).rows.find((x) => x.item === 'project rule').ok, true);
+  const r = installHost('cursor', { home, pluginRoot: ROOT, project: proj, skills: false, hook: false, mcp: 'none' });
+  assert.equal(statuses(r, 'rule')[0], 'updated');
+  const rule = read(file);
+  assert.ok(rule.includes('<!-- shufi managed rule:'));
+  assert.equal(rule.includes('jarvis-os'), false);
+  assert.match(rule, /description: Shufi memory hub/);
+});
+
+test('legacy: uninstall-host on a jarvis-os-only codex install removes everything', () => {
+  const root = fakeRoot();
+  const home = tmp();
+  seedLegacyCodex(home);
+  seedLegacySkill(path.join(home, '.agents', 'skills'), 'one', root);
+  const r = uninstallHost('codex', { home, pluginRoot: ROOT });
+  assert.equal(r.ok, true, JSON.stringify(r.actions));
+  const agents = read(path.join(home, '.codex', 'AGENTS.md'));
+  assert.doesNotMatch(agents, /jarvis-os|Jarvis memory|old text/);
+  assert.equal(agents, '# mine\n\ntail\n');
+  assert.equal(read(path.join(home, '.codex', 'config.toml')), 'model = "x"\n');
+  assert.equal(exists(path.join(home, '.agents', 'skills')), false, 'legacy-managed skill removed, empty dir pruned');
+});
+
+test('legacy: uninstall-host on a jarvis-os-only cursor install removes skills and the project rule', () => {
+  const root = fakeRoot();
+  const home = tmp();
+  const proj = tmp();
+  seedLegacySkill(path.join(home, '.cursor', 'skills'), 'one', root);
+  const file = path.join(proj, '.cursor', 'rules', 'jarvis-hub.mdc');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `---\nalwaysApply: true\n---\n${L_RULE}\n\nold\n`);
+  const r = uninstallHost('cursor', { home, pluginRoot: root, project: proj });
+  assert.equal(r.ok, true);
+  assert.equal(exists(file), false);
+  assert.equal(exists(path.join(home, '.cursor', 'skills')), false);
+});
+
+test('legacy: a codex file that is only a jarvis-os block is deleted on uninstall; damaged legacy markers are left alone', () => {
+  const home = tmp();
+  fs.mkdirSync(path.join(home, '.codex'), { recursive: true });
+  const f = path.join(home, '.codex', 'AGENTS.md');
+  fs.writeFileSync(f, `${L_MD_OPEN}\nbody\n${L_MD_CLOSE}\n`);
+  uninstallHost('codex', { home, pluginRoot: ROOT });
+  assert.equal(exists(f), false);
+
+  const broken = `keep\n${L_MD_OPEN}\nbody, no close\n`;
+  fs.writeFileSync(f, broken);
+  const r = installHost('codex', { home, pluginRoot: ROOT, skills: false, hook: false, mcp: 'none' });
+  assert.equal(r.ok, false);
+  assert.equal(read(f), broken);
 });
 
 // ------------------------------------------------------------------ fixtures

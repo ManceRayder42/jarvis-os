@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-os: SessionStart memory check.
+// shufi: SessionStart memory check.
 //
 // Looks for stale or broken things in the hub (paths that no longer exist, MEMORY.md lines that
 // point nowhere, files with no index line, `check:` lines that fail, overdue patterns.md records)
@@ -44,7 +44,7 @@ function pruneReports(dir) {
 export function runIfDue({ hub, home = os.homedir(), env = process.env, nowMs = Date.now(),
   force = false, startedAt = performance.now(), budgetMs = 150 } = {}) {
   try {
-    if (!hubIsSetUp(hub)) return force ? '[jarvis-os] memory check: no hub with a MEMORY.md found' : null;
+    if (!hubIsSetUp(hub)) return force ? '[shufi] memory check: no hub with a MEMORY.md found' : null;
     if (!force && disabled(hub, env)) return null;
 
     const stamp = path.join(hub, '.memory-check-stamp');
@@ -60,7 +60,7 @@ export function runIfDue({ hub, home = os.homedir(), env = process.env, nowMs = 
     const today = (env.JARVIS_MEMORY_CHECK_TODAY || '').trim() || localDate(new Date(nowMs));
     const res = checkMemory({ hub, home, today, budgetMs, startedAt });
     if (!res.findings.length) {
-      return force ? '[jarvis-os] memory check: clean (' + res.stats.files + ' files' + (res.stats.partial ? ', partial scan' : '') + ')' : null;
+      return force ? '[shufi] memory check: clean (' + res.stats.files + ' files' + (res.stats.partial ? ', partial scan' : '') + ')' : null;
     }
     const dir = path.join(hub, 'reports');
     const report = path.join(dir, 'memory-check-' + today + '.md');
@@ -70,7 +70,7 @@ export function runIfDue({ hub, home = os.homedir(), env = process.env, nowMs = 
     } catch (e) { return null; } // no report to point at, so no notice
     pruneReports(dir);
     const n = res.findings.length;
-    return '[jarvis-os] memory check: ' + n + ' possibly-stale item' + (n === 1 ? '' : 's') +
+    return '[shufi] memory check: ' + n + ' possibly-stale item' + (n === 1 ? '' : 's') +
       ' → ' + report + (res.stats.partial ? ' (partial scan)' : '') + ' (ask me to fix them)';
   } catch (e) {
     return null;
@@ -82,7 +82,7 @@ if (isMain) {
   try {
     const force = process.argv.includes('--force');
     const hub = resolveHub();
-    const line = hub ? runIfDue({ hub, force, startedAt: 0 }) : (force ? '[jarvis-os] memory check: no hub configured' : null);
+    const line = hub ? runIfDue({ hub, force, startedAt: 0 }) : (force ? '[shufi] memory check: no hub configured' : null);
     if (line) process.stdout.write(line + '\n');
   } catch (e) { /* never break session start */ }
   process.exit(0);

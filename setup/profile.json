@@ -1,7 +1,7 @@
 {
   "edition": "jarvis",
-  "product": "Jarvis OS",
-  "title": "Set up Jarvis",
+  "product": "Shufi",
+  "title": "Set up Shufi",
   "subtitle": "Memory that follows you into every Claude Code session.",
   "hub_default": "~/jarvis-hub",
   "accent": "#7dd3fc",

@@ -19,7 +19,7 @@
 #   MLX_WHISPER_MODEL      default mlx-community/whisper-large-v3-turbo
 #                          (any MLX-converted Whisper repo on Hugging Face)
 #
-# Cache: ~/.cache/jarvis-os/transcripts/<sha>.txt (+ .meta.json), keyed on
+# Cache: ~/.cache/shufi/transcripts/<sha>.txt (+ .meta.json), keyed on
 # audio bytes + language + backend. Skip with --no-cache.
 set -euo pipefail
 
@@ -82,7 +82,7 @@ if [[ -z "$BACKEND" ]]; then
 fi
 
 # ---------- cache key --------------------------------------------------------
-CACHE_DIR="${HOME}/.cache/jarvis-os/transcripts"
+CACHE_DIR="${HOME}/.cache/shufi/transcripts"
 mkdir -p "$CACHE_DIR"
 AUDIO_SHA="$(shasum -a 256 "$AUDIO" | awk '{print $1}')"
 SHA="$(printf '%s' "${AUDIO_SHA}|lang=${LANGCODE}|backend=${BACKEND}" | shasum -a 256 | awk '{print $1}')"

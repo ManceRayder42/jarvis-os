@@ -1,11 +1,11 @@
 ---
-name: jarvis-setup
-description: Launch the local setup page to configure the Jarvis memory hub
+name: shufi-setup
+description: Launch the local setup page to configure the Shufi memory hub
 allowed-tools:
   - Bash(node:*)
 ---
 
-Launch the Jarvis setup server and hand the user its URL.
+Launch the Shufi setup server and hand the user its URL.
 
 If the user would rather not click through a page ("just do it", "set it up
 for me"), use the `setup-for-me` skill instead: it runs the same steps from

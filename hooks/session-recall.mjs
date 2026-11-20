@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-os — session-recall hook (EXPERIMENTAL, OPT-IN)
+// shufi — session-recall hook (EXPERIMENTAL, OPT-IN)
 //
 // One script for two events, told apart by `hook_event_name` on stdin:
 //   SessionEnd   -> start a detached worker that writes a session note into

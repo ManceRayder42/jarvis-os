@@ -1,10 +1,10 @@
 #!/bin/bash
-# telegram-bridge.sh — start the one canonical jarvis-os Telegram session, in tmux.
+# telegram-bridge.sh — start the one canonical shufi Telegram session, in tmux.
 #
 # Opt-in. Nothing in this plugin calls this script for you — you (or the
 # watchdog you installed from telegram-watchdog.sh) run it. tmux is what lets
 # jarvisctl drive the running session afterwards (send-keys for /compact,
-# /context, the plugin's own /jarvis-os:done; capture-pane to read replies).
+# /context, the plugin's own /shufi:done; capture-pane to read replies).
 #
 #   telegram-bridge.sh            start the session if it isn't running
 #   telegram-bridge.sh --attach   print how to attach
@@ -25,7 +25,7 @@ BRIDGE_DIR="$PLUGIN_ROOT/bridge"
 
 # --- resolve the hub ---------------------------------------------------------
 # Same precedence as every other script in this plugin: explicit env var,
-# then the pointer file /jarvis-setup writes, then the documented default.
+# then the pointer file /shufi-setup writes, then the documented default.
 # The claude session launched below runs WITH ITS CWD SET TO THE HUB, so the
 # SessionStart hook loads MEMORY.md and every hub-relative path (sessions/,
 # wiki/, bridge state) resolves the same way it does in an interactive session.

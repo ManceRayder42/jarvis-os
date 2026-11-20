@@ -1,13 +1,13 @@
 {
-  "name": "jarvis-os",
+  "name": "shufi",
   "version": "0.6.0",
-  "description": "A persistent memory hub for Claude Code, Codex and Cursor that loads into every session from any directory, plus a curated set of research and workflow skills.",
+  "description": "Shufi, a felt owl that gives Claude Code, Codex and Cursor a persistent memory hub that loads into every session from any directory, plus a curated set of research and workflow skills.",
   "author": {
     "name": "Or Gelbgisser",
     "url": "https://github.com/ManceRayder42"
   },
-  "homepage": "https://github.com/ManceRayder42/jarvis-os",
-  "repository": "https://github.com/ManceRayder42/jarvis-os",
+  "homepage": "https://github.com/ManceRayder42/shufi",
+  "repository": "https://github.com/ManceRayder42/shufi",
   "license": "MIT",
   "keywords": [
     "memory",
@@ -27,7 +27,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"",
             "timeout": 5,
-            "statusMessage": "Loading Jarvis memory..."
+            "statusMessage": "Loading Shufi memory..."
           }
         ]
       },
@@ -75,5 +75,5 @@
       }
     ]
   },
-  "icon": "./assets/jarvis-os.jpg"
+  "icon": "./assets/shufi.jpg"
 }

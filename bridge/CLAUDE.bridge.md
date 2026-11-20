@@ -1,4 +1,4 @@
-<!-- jarvis-os bridge block. Append this to your hub's CLAUDE.md (or the
+<!-- shufi bridge block. Append this to your hub's CLAUDE.md (or the
      top-level CLAUDE.md of whatever directory you run the bridge from) so a
      running bridge session knows what to do with these words. Without this
      block, /new, /model, /effort, /compact, /context and /info arrive as
@@ -7,7 +7,7 @@
 
 ## Telegram Bridge — Session Control
 
-This session may be running as the Telegram bridge (see the jarvis-os plugin's
+This session may be running as the Telegram bridge (see the shufi plugin's
 `bridge/` scripts). When a message consists of one of the following words
 (with or without the leading slash, optionally followed by an argument),
 treat it as a command and run the matching `jarvisctl` invocation via Bash —
@@ -25,7 +25,7 @@ don't just talk about it:
 Notes:
 
 - `/new` and `/model`/`/effort` (which also restart) run the wrap-up
-  (`/jarvis-os:done`) and then kill this very session — that's expected, the
+  (`/shufi:done`) and then kill this very session — that's expected, the
   watchdog (if installed) or the bridge script brings a fresh one back up.
   Reply to the user first ("wrapping up and restarting — back in a minute")
   before running the command, since the process ends mid-flow.

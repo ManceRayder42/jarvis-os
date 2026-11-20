@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-os session-recall: turn a Claude Code transcript (.jsonl) into a
+// shufi session-recall: turn a Claude Code transcript (.jsonl) into a
 // compact, secret-filtered digest. No model is called here.
 //
 // Usage: node extract.mjs <transcript.jsonl> [--max-chars 60000]

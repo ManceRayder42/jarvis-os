@@ -31,7 +31,7 @@ echo "== 1. no hub configured"
 before=$(find "$HOME" | sort | cksum)
 out=$(hook SessionStart "$START"; hook UserPromptSubmit "$(prompt 'No, I said use tabs' s1)")
 check "all registered hooks exit 0" "rc_ok"
-check "only the existing setup nudge is printed" "[ \"\$(printf '%s' \"\$out\" | grep -c 'jarvis-os')\" = 1 ] && printf '%s' \"\$out\" | grep -q 'Not set up yet'"
+check "only the existing setup nudge is printed" "[ \"\$(printf '%s' \"\$out\" | grep -c 'shufi')\" = 1 ] && printf '%s' \"\$out\" | grep -q 'Not set up yet'"
 check "HOME untouched" "[ \"\$(find \"$HOME\" | sort | cksum)\" = '$before' ]"
 
 echo "== 2. empty hub folder"
@@ -50,7 +50,7 @@ snap=$(cd "$T/nest" && find . -type f -not -name '.memory-check-stamp' -not -pat
 : > "$T/rc.log"
 out=$(hook SessionStart "$START")
 check "SessionStart hooks exit 0" "rc_ok"
-check "memory loads" "printf '%s' \"\$out\" | grep -q 'Jarvis memory'"
+check "memory loads" "printf '%s' \"\$out\" | grep -q 'Shufi memory'"
 check "checker is silent on a clean template hub" "! printf '%s' \"\$out\" | grep -q 'memory check'"
 check "working rules carry the stale-fact lines" "printf '%s' \"\$out\" | grep -q 'Memory can be stale'"
 : > "$T/rc.log"
@@ -102,7 +102,7 @@ check "--lang he second run still changes nothing" "[ \"\$(tree_hash $H2)\" = '$
 : > "$T/rc.log"
 out=$(HOME="$H2" hook SessionStart "$START"; HOME="$H2" hook UserPromptSubmit "$(prompt 'No, I said use tabs' s6)")
 check "hooks exit 0 on the new hub" "rc_ok"
-check "memory loads from the new hub, checker silent" "printf '%s' \"\$out\" | grep -q 'Jarvis memory' && ! printf '%s' \"\$out\" | grep -q 'memory check'"
+check "memory loads from the new hub, checker silent" "printf '%s' \"\$out\" | grep -q 'Shufi memory' && ! printf '%s' \"\$out\" | grep -q 'memory check'"
 check "correction hook fires on the new hub" "printf '%s' \"\$out\" | grep -q 'If this corrects you'"
 # an existing user CLAUDE.md keeps its text
 H3="$T/home3"; mkdir -p "$H3/.claude"; printf '# mine\nline two (עברית)\nno trailing newline' > "$H3/.claude/CLAUDE.md"; cp "$H3/.claude/CLAUDE.md" "$T/claude.orig"

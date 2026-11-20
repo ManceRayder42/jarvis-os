@@ -41,7 +41,7 @@ TOKEN=$(grep -m1 '^TELEGRAM_BOT_TOKEN=' "$ENVF" 2>/dev/null | cut -d= -f2- | tr 
 [ -n "$TOKEN" ] || { echo "telegram-set-commands: no token in $ENVF"; exit 1; }
 
 COMMANDS='[
-  {"command":"new","description":"Wrap up this session (/jarvis-os:done) and start fresh"},
+  {"command":"new","description":"Wrap up this session (/shufi:done) and start fresh"},
   {"command":"info","description":"Model, effort, mode and uptime"},
   {"command":"model","description":"Switch model: /model opus | sonnet | fable | <id>"},
   {"command":"effort","description":"Set effort: /effort low | medium | high"},

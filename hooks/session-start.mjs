@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-os — SessionStart hook
+// shufi — SessionStart hook
 //
 // Loads <hub>/MEMORY.md into every session's context, from any working
 // directory. This exists because Claude Code's own auto-memory is keyed to
@@ -38,7 +38,7 @@ function flush() {
   if (!text) return;
   if (HOST !== 'claude') {
     // ${CLAUDE_PLUGIN_ROOT} is only set inside Claude Code. The skills mention it, so say what it means here.
-    text += '\n\n[jarvis-os] Plugin root on this host: ' + PLUGIN_ROOT + '. Where a skill says ${CLAUDE_PLUGIN_ROOT}, use this path.\n';
+    text += '\n\n[shufi] Plugin root on this host: ' + PLUGIN_ROOT + '. Where a skill says ${CLAUDE_PLUGIN_ROOT}, use this path.\n';
   }
   process.stdout.write(HOST === 'cursor' ? JSON.stringify({ additional_context: text }) : text);
 }
@@ -72,10 +72,10 @@ function resolveHub() {
 
 function nudge() {
   if (HOST !== 'claude') {
-    emit('[jarvis-os] Not set up yet. Offer to do it for the user: node "' + path.join(PLUGIN_ROOT, 'setup', 'agent.mjs') + '" plan\n');
+    emit('[shufi] Not set up yet. Offer to do it for the user: node "' + path.join(PLUGIN_ROOT, 'setup', 'agent.mjs') + '" plan\n');
     return;
   }
-  emit('[jarvis-os] Not set up yet. Offer to do it for the user (setup-for-me skill: node "$CLAUDE_PLUGIN_ROOT/setup/agent.mjs" plan), or they can run /jarvis-setup for the page.\n');
+  emit('[shufi] Not set up yet. Offer to do it for the user (setup-for-me skill: node "$CLAUDE_PLUGIN_ROOT/setup/agent.mjs" plan), or they can run /shufi-setup for the page.\n');
 }
 
 // Working rules live next to MEMORY.md. Optional: absent or unreadable means
@@ -105,7 +105,7 @@ function emitMemory(hub) {
 
   const byteLength = Buffer.byteLength(content, 'utf8');
   if (byteLength <= MAX_BYTES) {
-    emit('# Jarvis memory (' + hub + '/MEMORY.md)\n\n' + content + readWorkingRules(hub));
+    emit('# Shufi memory (' + hub + '/MEMORY.md)\n\n' + content + readWorkingRules(hub));
     return;
   }
 
@@ -115,7 +115,7 @@ function emitMemory(hub) {
     .split('\n')
     .filter((line) => /^\s*#/.test(line) || /^\s*[-*]\s/.test(line));
 
-  let out = '# Jarvis memory index (' + hub + '/MEMORY.md — full file is '
+  let out = '# Shufi memory index (' + hub + '/MEMORY.md — full file is '
     + Math.round(byteLength / 1024) + 'KB, over the ' + Math.round(MAX_BYTES / 1024)
     + 'KB session-start budget; showing index lines only)\n\n';
   out += indexLines.join('\n');

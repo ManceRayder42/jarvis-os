@@ -341,7 +341,7 @@ test('fresh install 3/4, template hub: checker silent, memory untouched, correct
   for (const text of ['No, I said use tabs', 'לא, אמרתי שצריך טאבים']) {
     const r = run('correction-capture.mjs', e, prompt(text));
     assert.equal(r.code, 0);
-    assert.match(r.out, /^\[jarvis-os\] If this corrects you: save ~\/jarvis-hub\/feedback_<slug>\.md/);
+    assert.match(r.out, /^\[shufi\] If this corrects you: save ~\/jarvis-hub\/feedback_<slug>\.md/);
     assert.match(r.out, /violations/);
     assert.ok(Buffer.byteLength(r.out) <= 215, 'bytes ' + Buffer.byteLength(r.out));
   }
@@ -365,7 +365,7 @@ test('fresh install 4/4, seeded hub: one line, report with every finding, memory
   assert.equal(r.err, '');
   assert.equal(r.out.trim().split('\n').length, 1, 'exactly one line');
   const report = path.join(hub, 'reports', 'memory-check-2026-11-19.md');
-  assert.equal(r.out.trim(), '[jarvis-os] memory check: 4 possibly-stale items → ' + report + ' (ask me to fix them)');
+  assert.equal(r.out.trim(), '[shufi] memory check: 4 possibly-stale items → ' + report + ' (ask me to fix them)');
   const text = fs.readFileSync(report, 'utf8');
   assert.match(text, /deploy-\d+\.sh` does not exist/);
   assert.match(text, /link target `gone-note\.md` does not exist/);
