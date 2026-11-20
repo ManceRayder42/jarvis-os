@@ -1364,7 +1364,7 @@ function renderTopic(fresh) {
   if (!TOPIC) return;
   const panel = $('#topic'), { items, anim } = topicList(TOPIC);
   const keep = fresh ? 0 : (panel.querySelector('.tp-list') || { scrollTop: 0 }).scrollTop;
-  const own = TOPIC === 'design' ? items.filter((i) => !i.sub) : items;
+  const own = TOPIC === 'design' ? items.filter((i) => i.sub !== 'animation') : items;
   const title = TOPIC === 'animation' ? topicLabel('design') + ' › ' + topicLabel('animation') : topicLabel(TOPIC);
   const back = el('button', { type: 'button', className: 'tp-back', textContent: tr('topicBack'), id: 'tp-back' });
   back.setAttribute('aria-label', tr('topicBackLabel'));
