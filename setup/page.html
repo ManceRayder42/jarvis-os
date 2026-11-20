@@ -238,7 +238,7 @@ summary { cursor: pointer; color: var(--ink-soft); font-size: 13.5px; }
 
 <div class="wrap">
   <header class="top">
-    <div class="brand" id="brand">Jarvis OS</div>
+    <div class="brand" id="brand">Shufi</div>
     <div class="spacer"></div>
     <span class="pill" id="link" data-state="on"><i></i><span id="link-text">Connected to your computer</span></span>
   </header>
@@ -294,14 +294,14 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) beat
 window.addEventListener('focus', beat);
 function setLink(on) {
   $('#link').dataset.state = on ? 'on' : 'off';
-  $('#link-text').textContent = on ? 'Connected to your computer' : 'Setup closed — run /jarvis-setup again';
+  $('#link-text').textContent = on ? 'Connected to your computer' : 'Setup closed — run /shufi-setup again';
 }
 
 /* ---- state --------------------------------------------------------------- */
 const state = { cfg: null, profile: null, preflight: [], skills: [], tools: [], telegram: null, current: null, setupResult: null };
 
 const DEFAULT_PROFILE = {
-  product: 'Jarvis OS', title: 'Set up Jarvis', subtitle: 'Memory that follows you into every Claude Code session.',
+  product: 'Shufi', title: 'Set up Jarvis', subtitle: 'Memory that follows you into every Claude Code session.',
   steps: ['machine', 'memory', 'skills', 'tools', 'phone', 'finish'],
   finish: { headline: "You're set.", lines: ['Open Claude Code in any folder — it already knows you.', 'Say "done" when you finish working, so it remembers.'] },
 };
@@ -405,11 +405,11 @@ const JARVIS_POSES = {
 function paintChrome() {
   const p = state.profile;
   document.title = p.title || 'Setup';
-  $('#brand').textContent = p.product || 'Jarvis OS';
+  $('#brand').textContent = p.product || 'Shufi';
   /* Jarvis gets his felt-owl poses; another edition (a team profile) gets
      its initial in the same ring, so the page never shows a stranger's face. */
   const face = $('#face');
-  const isJarvis = (p.product || 'Jarvis OS') === 'Jarvis OS';
+  const isJarvis = (p.product || 'Shufi') === 'Shufi';
   if (!face.firstChild) {
     if (isJarvis) face.append(...Object.entries(JARVIS_POSES).map(([k, src]) => { const i = el('img', { src, alt: '' }); i.dataset.pose = k; if (k === ($('#owl').dataset.mood || 'idle')) i.classList.add('on'); return i; }));
     else { face.classList.add('letter'); face.textContent = p.product.trim().charAt(0).toUpperCase(); }
@@ -663,7 +663,7 @@ const VIEWS = {
   tools() {
     const list = generalTools();
     const out = head('Tools', 'Programs and connections Claude can use for you. Press Install or Connect — each one says what it’s for. Skip any you don’t need.');
-    if (!list.length) { out.push(row('warn', 'Couldn’t read the tool list', 'Restart setup with /jarvis-setup.')); return out; }
+    if (!list.length) { out.push(row('warn', 'Couldn’t read the tool list', 'Restart setup with /shufi-setup.')); return out; }
     const ready = list.filter((t) => t.state === 'ready').length;
     out.push(el('div', { className: 'callout' }, el('b', { textContent: ready + ' of ' + list.length + ' ready. ' }), document.createTextNode('Recommended ones are marked — the rest are for when you need them.')));
     out.push(toolGrid(list));
@@ -753,7 +753,7 @@ const VIEWS = {
     (p.lines || []).forEach((line, i) => ul.append(el('li', {}, el('span', { className: 'k', textContent: String(i + 1) }), el('div', { textContent: line }))));
     out.push(ul);
     out.push(el('div', { className: 'section-label', textContent: 'Handy commands' }));
-    (p.commands || ['/jarvis-setup', '/done']).forEach((c) => out.push(el('div', { style: 'margin-bottom:8px' }, copyCmd(c))));
+    (p.commands || ['/shufi-setup', '/done']).forEach((c) => out.push(el('div', { style: 'margin-bottom:8px' }, copyCmd(c))));
     return out;
   },
 };

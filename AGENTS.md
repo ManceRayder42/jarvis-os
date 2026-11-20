@@ -1,4 +1,4 @@
-# For agents working with Jarvis OS
+# For agents working with Shufi
 
 You can set this plugin up for the user without the browser page.
 

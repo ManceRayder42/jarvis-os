@@ -10,7 +10,7 @@ The most useful bug report for this project answers three questions:
 1. **What did the plugin do, and what did you expect instead?**
 2. **What does `<hub>/jarvis-config.json` look like?** (redact any paths you'd
    rather not share — the shape is what matters)
-3. **Did `/jarvis-setup` report an error, or did it look like it worked?**
+3. **Did `/shufi-setup` report an error, or did it look like it worked?**
 
 That third one matters more than it sounds. This plugin's worst failure class
 is silent: setup succeeds, nothing errors, and memory just never loads. If

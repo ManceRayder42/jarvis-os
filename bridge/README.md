@@ -52,7 +52,7 @@ reboot, restarts itself," install the launchd jobs below.
    ```
    echo $CLAUDE_PLUGIN_ROOT
    ```
-   (Or locate it yourself: `find ~/.claude/plugins/cache -maxdepth 2 -iname 'jarvis-os'`.)
+   (Or locate it yourself: `find ~/.claude/plugins/cache -maxdepth 2 -iname 'shufi'`.)
 
 2. Copy both plist templates into `~/Library/LaunchAgents/`, substituting
    that path and your home directory:

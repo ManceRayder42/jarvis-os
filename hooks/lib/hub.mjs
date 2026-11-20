@@ -1,4 +1,4 @@
-// jarvis-os: hub resolution shared by the memory-check and correction-capture hooks.
+// shufi: hub resolution shared by the memory-check and correction-capture hooks.
 // Same order as session-start.mjs: JARVIS_HUB, then the ~/.jarvis-hub-path pointer file.
 // Returns null when no hub is configured. Never throws.
 import fs from 'node:fs';

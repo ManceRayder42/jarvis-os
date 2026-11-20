@@ -79,7 +79,7 @@ The `CONTEXT.md` update / commit attempt should also abort — the session note 
 
 ## Hub directory doesn't exist at all
 
-Should never happen if the resolver worked, but if it does: `mkdir -p <sessions_dir>` and continue. This is expected on a genuinely fresh install where the user hasn't run `/jarvis-setup` yet — don't treat it as an error, just create what's needed.
+Should never happen if the resolver worked, but if it does: `mkdir -p <sessions_dir>` and continue. This is expected on a genuinely fresh install where the user hasn't run `/shufi-setup` yet — don't treat it as an error, just create what's needed.
 
 ## patterns.md doesn't exist
 

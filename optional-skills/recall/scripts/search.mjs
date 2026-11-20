@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-os session-recall: search past sessions. No model call.
+// shufi session-recall: search past sessions. No model call.
 //
 // Usage: node search.mjs <term> [more terms] [--all] [--limit N] [--notes-only]
 //

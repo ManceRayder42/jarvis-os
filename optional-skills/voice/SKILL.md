@@ -21,7 +21,7 @@ missing API key degrades rather than breaks:
 
 ## Setup
 
-Add `ELEVENLABS_API_KEY` via the `/jarvis-setup` page, or set it directly in
+Add `ELEVENLABS_API_KEY` via the `/shufi-setup` page, or set it directly in
 `<hub>/.env`:
 
 ```
@@ -66,5 +66,5 @@ skills" section for how enabling works.)
 | `VOICE_MAX_CHARS` | `2500` | Truncate longer text before sending |
 | `JARVIS_CHAT_ID` | first paired chat in `access.json` | Which Telegram chat `say-voice.sh` sends to |
 
-Caches transcripts by audio hash under `~/.cache/jarvis-os/transcripts/` so
+Caches transcripts by audio hash under `~/.cache/shufi/transcripts/` so
 repeat runs on the same file don't re-transcribe.

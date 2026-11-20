@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// jarvis-os: UserPromptSubmit hook. A correction becomes a rule in one step.
+// shufi: UserPromptSubmit hook. A correction becomes a rule in one step.
 //
 // When your message sounds like a correction of how Claude behaves ("no, I said...", "stop doing...",
 // "לא, אמרתי...", "תפסיק..."), this adds ONE short instruction (~80 tokens) to that turn: write or
@@ -39,7 +39,7 @@ function readStdin() {
 
 function stateDir() {
   const uid = typeof process.getuid === 'function' ? process.getuid() : 'u';
-  return process.env.JARVIS_STATE_DIR || path.join(os.tmpdir(), 'jarvis-os-' + uid);
+  return process.env.JARVIS_STATE_DIR || path.join(os.tmpdir(), 'shufi-' + uid);
 }
 
 function stateFile(sid) {

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// jarvis-plugin setup server (SPEC.md decision 6).
+// shufi setup server (SPEC.md decision 6).
 //
 // Ephemeral, loopback-only, zero dependencies. Serves the setup page,
 // writes the hub config, and shuts itself down. Never forks, never
 // detaches, never listens on anything but 127.0.0.1.
 //
-// Lifecycle: born from `/jarvis-setup`, gets a long grace period (180s) to
+// Lifecycle: born from `/shufi-setup`, gets a long grace period (180s) to
 // receive its FIRST heartbeat -- that's the agent-to-human round trip
 // (print URL, human switches app, opens browser), which routinely takes
 // longer than a browser tab-close detection should. Once a heartbeat has
@@ -35,14 +35,14 @@ const PLUGIN_ROOT = path.join(__dirname, '..');
 const MEMORY_TEMPLATE_DIR = path.join(PLUGIN_ROOT, 'memory-template');
 
 // The edition profile: everything the page renders that differs between the
-// generic Jarvis OS and a team edition (name, subtitle, which steps to show,
+// generic Shufi and a team edition (name, subtitle, which steps to show,
 // accent color, finish-screen copy, default memory folder). Served to the page
 // inside GET /api/state. A missing or malformed profile.json must never stop
 // setup from starting -- every field falls back to the generic defaults, and a
 // field of the wrong type is ignored individually rather than rejecting the file.
 const PROFILE_DEFAULTS = {
   edition: 'jarvis',
-  product: 'Jarvis OS',
+  product: 'Shufi',
   title: 'Set up Jarvis',
   subtitle: 'Memory that follows you into every Claude Code session.',
   hub_default: '~/jarvis-hub',
@@ -476,7 +476,7 @@ artifact actually gets looked at.
 **How to apply:** before writing more than a couple of sentences of
 explanation, build the HTML artifact instead of the prose.
 
-This file was created by the "Auto-ELI5" toggle in Jarvis OS setup. Turning
+This file was created by the "Auto-ELI5" toggle in Shufi setup. Turning
 it off removes this file and its line in MEMORY.md; turning it back on
 recreates it from scratch, so keep a copy of any edits you want to preserve.
 `;
@@ -801,8 +801,8 @@ async function handleGitInit(req, res) {
   let identitySetHere = false;
   if (!identity.ok) {
     // Repo-local only -- no --global anywhere in this call.
-    runCommand('git', ['-C', config.hub, 'config', 'user.name', 'Jarvis OS']);
-    runCommand('git', ['-C', config.hub, 'config', 'user.email', 'jarvis-os@localhost']);
+    runCommand('git', ['-C', config.hub, 'config', 'user.name', 'Shufi']);
+    runCommand('git', ['-C', config.hub, 'config', 'user.email', 'shufi@localhost']);
     identity = readIdentity();
     identitySetHere = identity.ok;
   }
@@ -1065,8 +1065,8 @@ async function handleSetupAll(req, res) {
       return Boolean(r.ok && r.output);
     };
     // Repo-local only. See handleGitInit for why this is set rather than asked.
-    if (!has('user.name')) runCommand('git', ['-C', config.hub, 'config', 'user.name', 'Jarvis OS']);
-    if (!has('user.email')) runCommand('git', ['-C', config.hub, 'config', 'user.email', 'jarvis-os@localhost']);
+    if (!has('user.name')) runCommand('git', ['-C', config.hub, 'config', 'user.name', 'Shufi']);
+    if (!has('user.email')) runCommand('git', ['-C', config.hub, 'config', 'user.email', 'shufi@localhost']);
     return { created: !alreadyRepo };
   });
 
@@ -1467,7 +1467,7 @@ async function probeHttpMcp(url, secret) {
       },
       body: JSON.stringify({
         jsonrpc: '2.0', id: 1, method: 'initialize',
-        params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'jarvis-setup', version: '1' } },
+        params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'shufi-setup', version: '1' } },
       }),
       signal: AbortSignal.timeout(8000),
     });
@@ -1584,13 +1584,13 @@ const idleChecker = setInterval(() => {
   const limit = heartbeatReceived ? HEARTBEAT_IDLE_MS : FIRST_HEARTBEAT_GRACE_MS;
   if (Date.now() - lastHeartbeat > limit) {
     const reason = heartbeatReceived ? 'no heartbeat for 90s (tab closed)' : 'no heartbeat within 180s of starting (link never opened)';
-    console.log(`[jarvis-setup] ${reason} -- shutting down.`);
+    console.log(`[shufi-setup] ${reason} -- shutting down.`);
     shutdown(0);
   }
 }, HEARTBEAT_CHECK_MS);
 
 const hardCap = setTimeout(() => {
-  console.log('[jarvis-setup] 10 minute hard cap reached -- shutting down.');
+  console.log('[shufi-setup] 10 minute hard cap reached -- shutting down.');
   shutdown(0);
 }, HARD_CAP_MS);
 
@@ -1608,9 +1608,9 @@ server.listen(0, '127.0.0.1', () => {
   console.log('Open that in a browser. This waits up to 180s for that first open, then');
   console.log('drops to a 90s grace after the tab closes, and shuts down after 10 minutes');
   console.log('no matter what. Closing this terminal also stops it. Reopen anytime with');
-  console.log('/jarvis-setup.');
+  console.log('/shufi-setup.');
 
-  // commands/jarvis-setup.md tells the AGENT not to open this link itself
+  // commands/shufi-setup.md tells the AGENT not to open this link itself
   // (it's a page the human interacts with, not something to fetch) -- this
   // is different: the SERVER opening the human's actual browser for them,
   // same as `npm create vite` or similar CLIs do. Best-effort and silent;

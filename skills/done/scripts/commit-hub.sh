@@ -65,7 +65,7 @@ done
 HUB_PATHS="sessions wiki patterns.md conversation-log.md CONTEXT.md daily-notes ideas research learning"
 
 # A hub that was never git-initialized used to make this script exit
-# silently with "nothing:hub" forever, so a fresh /jarvis-setup install never
+# silently with "nothing:hub" forever, so a fresh /shufi-setup install never
 # got version history unless the user remembered to `git init` it themselves
 # first. There's no reason a memory hub can't be a repo — initialize it on
 # first use instead.

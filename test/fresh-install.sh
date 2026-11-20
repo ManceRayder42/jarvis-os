@@ -31,7 +31,7 @@ echo "== 1. no hub configured"
 before=$(find "$HOME" | sort | cksum)
 out=$(hook SessionStart "$START"; hook UserPromptSubmit "$(prompt 'No, I said use tabs' s1)")
 check "all registered hooks exit 0" "rc_ok"
-check "only the existing setup nudge is printed" "[ \"\$(printf '%s' \"\$out\" | grep -c 'jarvis-os')\" = 1 ] && printf '%s' \"\$out\" | grep -q 'Not set up yet'"
+check "only the existing setup nudge is printed" "[ \"\$(printf '%s' \"\$out\" | grep -c 'shufi')\" = 1 ] && printf '%s' \"\$out\" | grep -q 'Not set up yet'"
 check "HOME untouched" "[ \"\$(find \"$HOME\" | sort | cksum)\" = '$before' ]"
 
 echo "== 2. empty hub folder"

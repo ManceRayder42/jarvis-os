@@ -1,5 +1,5 @@
 ---
-name: jarvis-setup
+name: shufi-setup
 description: Launch the local setup page to configure the Jarvis memory hub
 allowed-tools:
   - Bash(node:*)

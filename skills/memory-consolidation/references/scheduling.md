@@ -49,7 +49,7 @@ sed -i '' -e "s#__CLAUDE_PLUGIN_ROOT__#$PLUGIN_ROOT#g" -e "s#__HOME__#$HOME#g" "
 `CLAUDE_PLUGIN_ROOT` is only set while a plugin-enabled session is running —
 `claude plugin marketplace add` doesn't move the files, so this is just the
 repo's own path on disk (`find ~/.claude/plugins/cache -maxdepth 2 -iname
-'jarvis-os'` finds it without a live session). launchd plists don't expand
+'shufi'` finds it without a live session). launchd plists don't expand
 shell variables themselves, which is why the substitution has to happen
 before you load it, not inside the XML.
 
@@ -95,7 +95,7 @@ catch-up-on-next-tick behavior applies.
 ## Environment
 
 Both snippets need `JARVIS_HUB` set (or `~/.jarvis-hub-path` populated by
-`/jarvis-setup`) so the scheduler and the skill agree on which hub to
+`/shufi-setup`) so the scheduler and the skill agree on which hub to
 consolidate into — launchd and cron jobs don't inherit your shell profile,
 so don't assume an env var you only set in `.zshrc` will be visible here.
 Set it explicitly in the plist's `EnvironmentVariables` dict, or in a

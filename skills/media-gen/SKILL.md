@@ -25,9 +25,9 @@ each request draws down from it: **spend is real money — be surgical.**
 ## Auth
 
 Read the key from the environment first; fall back to the hub's `.env` (the
-`/jarvis-setup` page's Media section writes it there). The hub itself
+`/shufi-setup` page's Media section writes it there). The hub itself
 resolves the same way the SessionStart hook does: `JARVIS_HUB` env var first,
-else the pointer file at `~/.jarvis-hub-path` written by `/jarvis-setup`,
+else the pointer file at `~/.jarvis-hub-path` written by `/shufi-setup`,
 else `~/jarvis-hub`. Never hardcode a path to it and never echo/print/log the
 value:
 
@@ -38,7 +38,7 @@ FAL_KEY="${FAL_KEY:-$(grep '^FAL_KEY=' "$hub/.env" 2>/dev/null | cut -d= -f2-)}"
 ```
 
 If `FAL_KEY` is still empty after that, stop and tell the user to add it via
-`/jarvis-setup` — do not hunt for it elsewhere. Every request:
+`/shufi-setup` — do not hunt for it elsewhere. Every request:
 header `Authorization: Key $FAL_KEY`.
 
 ## Cost discipline (the point of this skill)

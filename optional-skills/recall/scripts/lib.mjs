@@ -1,4 +1,4 @@
-// jarvis-os session-recall: shared helpers (hub resolution, opt-in check,
+// shufi session-recall: shared helpers (hub resolution, opt-in check,
 // secret redaction, transcript parsing). No dependencies.
 import fs from 'node:fs';
 import os from 'node:os';
