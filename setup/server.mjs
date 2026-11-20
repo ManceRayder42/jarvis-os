@@ -43,7 +43,7 @@ const MEMORY_TEMPLATE_DIR = path.join(PLUGIN_ROOT, 'memory-template');
 const PROFILE_DEFAULTS = {
   edition: 'jarvis',
   product: 'Shufi',
-  title: 'Set up Jarvis',
+  title: 'Set up Shufi',
   subtitle: 'Memory that follows you into every Claude Code session.',
   hub_default: '~/jarvis-hub',
   accent: '#7dd3fc',
@@ -1601,7 +1601,7 @@ server.listen(0, '127.0.0.1', () => {
   port = server.address().port;
   lastHeartbeat = Date.now();
   const url = `http://127.0.0.1:${port}/?t=${TOKEN}`;
-  console.log('Jarvis setup is running:');
+  console.log('Shufi setup is running:');
   console.log('');
   console.log(`  ${url}`);
   console.log('');

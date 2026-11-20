@@ -105,7 +105,7 @@ function emitMemory(hub) {
 
   const byteLength = Buffer.byteLength(content, 'utf8');
   if (byteLength <= MAX_BYTES) {
-    emit('# Jarvis memory (' + hub + '/MEMORY.md)\n\n' + content + readWorkingRules(hub));
+    emit('# Shufi memory (' + hub + '/MEMORY.md)\n\n' + content + readWorkingRules(hub));
     return;
   }
 
@@ -115,7 +115,7 @@ function emitMemory(hub) {
     .split('\n')
     .filter((line) => /^\s*#/.test(line) || /^\s*[-*]\s/.test(line));
 
-  let out = '# Jarvis memory index (' + hub + '/MEMORY.md — full file is '
+  let out = '# Shufi memory index (' + hub + '/MEMORY.md — full file is '
     + Math.round(byteLength / 1024) + 'KB, over the ' + Math.round(MAX_BYTES / 1024)
     + 'KB session-start budget; showing index lines only)\n\n';
   out += indexLines.join('\n');

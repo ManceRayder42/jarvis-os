@@ -1,6 +1,6 @@
 ---
 name: setup-for-me
-description: Do the Shufi setup for the user instead of sending them to the setup page — create the memory, switch skills, install and connect tools, and hand back only the steps a person must do. Use when the user says "set me up", "set it up for me", "finish the setup", "configure Jarvis", "what's left to set up", "תגדיר לי", "תסיים את ההתקנה", right after the plugin was installed, or when the session-start note says the memory isn't set up yet.
+description: Do the Shufi setup for the user instead of sending them to the setup page — create the memory, switch skills, install and connect tools, and hand back only the steps a person must do. Use when the user says "set me up", "set it up for me", "finish the setup", "configure Shufi", "configure Jarvis", "what's left to set up", "תגדיר לי", "תסיים את ההתקנה", right after the plugin was installed, or when the session-start note says the memory isn't set up yet.
 ---
 
 # Setup, done by you
