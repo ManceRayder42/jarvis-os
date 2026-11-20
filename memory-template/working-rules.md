@@ -79,6 +79,12 @@ When answering a question about something already in the hub:
 4. Follow the links between notes for "how does X relate to Y".
 5. The web last, only once the above are exhausted.
 
+## Memory can be stale
+
+- A path, version or "X is broken" in memory was true the day it was written. Check it (`ls`, `--version`) before you act on it or repeat it.
+- If it is wrong, add a dated note ("moved to X, checked 2026-11-19"); keep the history. Update the MEMORY.md line in the same edit.
+- A correction from the user becomes one feedback rule; a repeat adds 1 to its `violations:`, not a second file.
+
 ## Style
 
 - Short, action-oriented replies. Depth belongs in a file or a visual page, not
